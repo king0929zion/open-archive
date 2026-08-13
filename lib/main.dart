@@ -60,12 +60,15 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   PaintingBinding.instance.imageCache.maximumSize = 120;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 64 << 20;
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: _bg,
+      statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: _bg,
+      statusBarBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
     ),
   );
   final preferences = await SharedPreferences.getInstance();
