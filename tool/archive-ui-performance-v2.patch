@@ -1,212 +1,138 @@
 --- a/lib/main.dart
 +++ b/lib/main.dart
-@@ -53,12 +53,31 @@ Future<void> main() async {
+@@
+   WidgetsFlutterBinding.ensureInitialized();
+   PaintingBinding.instance.imageCache.maximumSize = 120;
+   PaintingBinding.instance.imageCache.maximumSizeBytes = 64 << 20;
++  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+   SystemChrome.setSystemUIOverlayStyle(
+     const SystemUiOverlayStyle(
+-      statusBarColor: _bg,
++      statusBarColor: Colors.transparent,
+       statusBarIconBrightness: Brightness.dark,
+-      systemNavigationBarColor: _bg,
++      statusBarBrightness: Brightness.light,
++      systemNavigationBarColor: Colors.transparent,
        systemNavigationBarIconBrightness: Brightness.dark,
++      systemNavigationBarDividerColor: Colors.transparent,
      ),
    );
-+  final preferences = await SharedPreferences.getInstance();
-+  GlassQuality? initialGlassQuality;
-+  final savedGlassQuality = preferences.getString('archive.glass_quality');
-+  if (savedGlassQuality != null) {
-+    try {
-+      initialGlassQuality = GlassQuality.values.byName(savedGlassQuality);
-+    } catch (_) {
-+      initialGlassQuality = null;
-+    }
-+  }
-+
-   await LiquidGlassWidgets.initialize();
-   runApp(
-     LiquidGlassWidgets.wrap(
-       brightnessResolver: Theme.maybeBrightnessOf,
-+      adaptiveQuality: true,
-+      adaptiveConfig: GlassAdaptiveScopeConfig(
-+        initialQuality: initialGlassQuality,
-+        allowStepUp: true,
-+        onQualityChanged: (_, quality) => unawaited(
-+          preferences.setString('archive.glass_quality', quality.name),
-+        ),
-+      ),
-       child: const ArchiveApp(),
-     ),
-   );
- }
-@@ -594,23 +613,29 @@ class _CircularIconButton extends StatelessWidget {
-         ),
-       );
-     }
--    // The package's transparent mode is the documented pattern for controls
--    // over an existing surface: it retains liquid stretch/glow on press without
--    // adding an opaque white glass plate on Archive's white canvas.
--    return DecoratedBox(
--      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
--      child: ClipOval(
--        child: GlassButton.custom(
--          onTap: callback ?? () {},
--          enabled: callback != null,
--          width: size,
--          height: size,
--          style: GlassButtonStyle.transparent,
--          stretch: .15,
--          child: icon,
--        ),
-+    return GlassIconButton(
-+      icon: icon,
-+      onPressed: callback,
-+      size: size,
-+      iconSize: size * .47,
-+      interactionScale: .94,
-+      useOwnLayer: true,
-+      glowColor: dark ? const Color(0x30111111) : const Color(0x4DFFFFFF),
-+      glowRadius: size * .58,
-+      settings: LiquidGlassSettings(
-+        blur: 10,
-+        thickness: dark ? 30 : 24,
-+        glassColor: dark ? const Color(0xD4222222) : const Color(0x52FFFFFF),
-+        backerColor: dark ? const Color(0xD9222222) : const Color(0xC7F8F8F8),
-+        glowIntensity: dark ? .62 : .48,
-+        shadowElevation: dark ? .7 : .45,
-+        saturation: 1.12,
+@@
+                           return FadeTransition(
+                             opacity: Tween<double>(
+-                              begin: .82,
++                              begin: .72,
+                               end: 1,
+                             ).animate(curved),
+                             child: SlideTransition(
+                               position: Tween<Offset>(
+                                 begin: offset,
+                                 end: Offset.zero,
+                               ).animate(curved),
+-                              child: child,
++                              child: ScaleTransition(
++                                scale: Tween<double>(
++                                  begin: .988,
++                                  end: 1,
++                                ).animate(curved),
++                                alignment: reverse
++                                    ? Alignment.centerLeft
++                                    : Alignment.centerRight,
++                                child: child,
++                              ),
+                             ),
+                           );
+@@
+     return GlassIconButton(
+       icon: icon,
+       onPressed: callback,
+       size: size,
+       iconSize: size * .47,
+-      interactionScale: .94,
++      interactionScale: .925,
+       useOwnLayer: true,
+-      glowColor: dark ? const Color(0x30111111) : const Color(0x4DFFFFFF),
+-      glowRadius: size * .58,
++      glowColor: dark ? const Color(0x24111111) : const Color(0x38FFFFFF),
++      glowRadius: size * .66,
+       settings: LiquidGlassSettings(
+-        blur: 10,
+-        thickness: dark ? 30 : 24,
+-        glassColor: dark ? const Color(0xD4222222) : const Color(0x52FFFFFF),
+-        backerColor: dark ? const Color(0xD9222222) : const Color(0xC7F8F8F8),
+-        glowIntensity: dark ? .62 : .48,
+-        shadowElevation: dark ? .7 : .45,
+-        saturation: 1.12,
++        blur: dark ? 7 : 5.5,
++        thickness: dark ? 25 : 19,
++        glassColor: dark ? const Color(0x7A181818) : const Color(0x24FFFFFF),
++        backerColor: dark ? const Color(0x52111111) : const Color(0x14FFFFFF),
++        lightIntensity: dark ? .58 : .72,
++        ambientStrength: dark ? .06 : .1,
++        ambientRim: dark ? .16 : .22,
++        fresnelStrength: dark ? .78 : .9,
++        refractiveIndex: 1.16,
++        chromaticAberration: .008,
++        glowIntensity: dark ? .42 : .3,
++        specularSharpness: GlassSpecularSharpness.sharp,
++        standardOpacityMultiplier: dark ? .72 : .42,
++        shadowElevation: dark ? .45 : .28,
++        saturation: 1.16,
++        whitenStrength: dark ? 0 : .025,
        ),
-+      anchorStretch: true,
-+      semanticLabel: iconName,
-     );
+       anchorStretch: true,
+       semanticLabel: iconName,
+@@
+   void _select(AppPage page) {
+     widget.onClose();
+-    Future<void>.delayed(const Duration(milliseconds: 160), () {
++    Future<void>.delayed(const Duration(milliseconds: 130), () {
+       if (mounted) widget.onSelect(page);
+     });
    }
- }
-@@ -960,12 +988,6 @@ class _ComposePageState extends State<_ComposePage> {
-   String _mood = '';
-   bool get _canSubmit => _text.text.trim().isNotEmpty || _images.isNotEmpty;
- 
--  @override
--  void initState() {
--    super.initState();
--    _text.addListener(() => setState(() {}));
--  }
--
-   @override
-   void dispose() {
-     _text.dispose();
-@@ -975,7 +997,12 @@ class _ComposePageState extends State<_ComposePage> {
-   }
- 
-   Future<void> _pickImages() async {
--    final picked = await _picker.pickMultiImage(imageQuality: 88);
-+    final picked = await _picker.pickMultiImage(
-+      maxWidth: 2048,
-+      maxHeight: 2048,
-+      imageQuality: 86,
-+    );
-     if (picked.isEmpty) return;
-     final bytes = await Future.wait(picked.map((file) => file.readAsBytes()));
-     if (mounted) setState(() => _images.addAll(bytes));
-@@ -1115,12 +1142,15 @@ class _ComposePageState extends State<_ComposePage> {
-       Positioned(
-         top: 16,
-         right: 16,
--        child: _CircularIconButton(
--          iconName: 'check',
--          onTap: _submit,
--          dark: true,
--          enabled: _canSubmit,
-+        child: ValueListenableBuilder<TextEditingValue>(
-+          valueListenable: _text,
-+          builder: (context, value, _) => _CircularIconButton(
-+            iconName: 'check',
-+            onTap: _submit,
-+            dark: true,
-+            enabled: value.text.trim().isNotEmpty || _images.isNotEmpty,
-+          ),
-         ),
-       ),
-     ],
-@@ -1140,7 +1170,15 @@ class _PreviewImage extends StatelessWidget {
-       children: [
-         ClipRRect(
-           borderRadius: BorderRadius.circular(_radiusSm),
--          child: Image.memory(bytes, width: 76, height: 76, fit: BoxFit.cover),
-+          child: Image.memory(
-+            bytes,
-+            width: 76,
-+            height: 76,
-+            fit: BoxFit.cover,
-+            cacheWidth: (76 * MediaQuery.devicePixelRatioOf(context)).round(),
-+            filterQuality: FilterQuality.medium,
-+          ),
-         ),
-         Positioned(
-           top: 4,
-@@ -1321,12 +1359,6 @@ class _DetailPageState extends State<_DetailPage> {
-   final _scroll = ScrollController();
-   ArchiveComment? _replyTo;
--  @override
--  void initState() {
--    super.initState();
--    _comment.addListener(() => setState(() {}));
--  }
- 
-   @override
-   void dispose() {
-@@ -1625,7 +1657,6 @@ class _CommentBar extends StatelessWidget {
-   final VoidCallback onSend;
-   @override
-   Widget build(BuildContext context) {
--    final active = controller.text.trim().isNotEmpty;
-     return Padding(
-       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-       child: Column(
-@@ -1686,12 +1717,15 @@ class _CommentBar extends StatelessWidget {
-               ),
-               const SizedBox(width: 9),
--              _CircularIconButton(
--                iconName: 'send',
--                onTap: onSend,
--                dark: true,
--                enabled: active,
--                size: 34,
-+              ValueListenableBuilder<TextEditingValue>(
-+                valueListenable: controller,
-+                builder: (context, value, _) => _CircularIconButton(
-+                  iconName: 'send',
-+                  onTap: onSend,
-+                  dark: true,
-+                  enabled: value.text.trim().isNotEmpty,
-+                  size: 34,
-+                ),
-               ),
-             ],
-           ),
-@@ -1745,7 +1779,6 @@ class _AchiPageState extends State<_AchiPage> {
-   @override
-   void initState() {
-     super.initState();
--    _input.addListener(() => setState(() {}));
-     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
-   }
-@@ -1813,12 +1846,15 @@ class _AchiPageState extends State<_AchiPage> {
-             ),
-             const SizedBox(width: 9),
--            _CircularIconButton(
--              iconName: 'send',
--              onTap: _send,
--              dark: true,
--              enabled: _input.text.trim().isNotEmpty,
--              size: 34,
-+            ValueListenableBuilder<TextEditingValue>(
-+              valueListenable: _input,
-+              builder: (context, value, _) => _CircularIconButton(
-+                iconName: 'send',
-+                onTap: _send,
-+                dark: true,
-+                enabled: value.text.trim().isNotEmpty,
-+                size: 34,
-+              ),
-             ),
-           ],
-         ),
-@@ -2680,7 +2716,6 @@ class _ApiEditorPageState extends State<_ApiEditorPage> {
-                       iconName: 'plus',
-                       onTap: _addCustomModel,
-                       dark: true,
--                      glass: false,
-                       size: 42,
-                     ),
+@@
+           AnimatedOpacity(
+-            opacity: progress,
+-            duration: _dragging ? Duration.zero : _motionDuration(context, 220),
++            opacity: progress * .78,
++            duration: _dragging ? Duration.zero : _motionDuration(context, 190),
++            curve: Curves.easeOutCubic,
+             child: GestureDetector(
+               onTap: widget.onClose,
+               child: const ColoredBox(
+@@
+           AnimatedContainer(
+-            duration: _dragging ? Duration.zero : _motionDuration(context, 260),
+-            curve: Curves.easeOutCubic,
+-            transform: Matrix4.translationValues(-width * (1 - progress), 0, 0),
++            duration: _dragging ? Duration.zero : _motionDuration(context, 285),
++            curve: Curves.easeOutQuint,
++            transformAlignment: Alignment.centerLeft,
++            transform: Matrix4(
++              .985 + (.015 * progress), 0, 0, 0,
++              0, .985 + (.015 * progress), 0, 0,
++              0, 0, 1, 0,
++              -width * (1 - progress), 0, 0, 1,
++            ),
+             child: GestureDetector(
+               onHorizontalDragUpdate: (details) => _dragUpdate(details, width),
+               onHorizontalDragEnd: _dragEnd,
+@@
+                 height: double.infinity,
+                 padding: const EdgeInsets.fromLTRB(0, 28, 0, 16),
+                 decoration: const BoxDecoration(
+-                  color: _bg,
++                  color: Color(0xFCFFFFFF),
+                   borderRadius: BorderRadius.horizontal(
+-                    right: Radius.circular(_radiusLg),
++                    right: Radius.circular(32),
+                   ),
++                  boxShadow: [
++                    BoxShadow(
++                      color: Color(0x16000000),
++                      blurRadius: 30,
++                      offset: Offset(8, 0),
++                    ),
++                  ],
+                 ),
+                 child: Column(
