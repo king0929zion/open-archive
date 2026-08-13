@@ -1,33 +1,23 @@
 --- a/lib/main.dart
 +++ b/lib/main.dart
-@@ -638,18 +638,18 @@ class _CircularIconButton extends StatelessWidget {
-     return GlassIconButton(
-       icon: icon,
-       onPressed: callback,
-       size: size,
-       iconSize: size * .47,
--      interactionScale: .94,
-+      interactionScale: .925,
-       useOwnLayer: true,
--      glowColor: dark ? const Color(0x30111111) : const Color(0x4DFFFFFF),
--      glowRadius: size * .58,
-+      glowColor: dark ? const Color(0x24111111) : const Color(0x38FFFFFF),
-+      glowRadius: size * .66,
-       settings: LiquidGlassSettings(
--        blur: 10,
--        thickness: dark ? 30 : 24,
--        glassColor: dark ? const Color(0xD4222222) : const Color(0x52FFFFFF),
--        backerColor: dark ? const Color(0xD9222222) : const Color(0xC7F8F8F8),
--        glowIntensity: dark ? .62 : .48,
--        shadowElevation: dark ? .7 : .45,
--        saturation: 1.12,
-+        blur: dark ? 7 : 5.5,
-+        thickness: dark ? 25 : 19,
-+        glassColor: dark ? const Color(0x86181818) : const Color(0x26FFFFFF),
-+        backerColor: dark ? const Color(0x5C111111) : const Color(0x20FFFFFF),
-+        glowIntensity: dark ? .44 : .31,
-+        shadowElevation: dark ? .48 : .3,
-+        saturation: 1.16,
-       ),
-       anchorStretch: true,
-       semanticLabel: iconName,
+@@ -482,8 +482,8 @@ class _ArchiveShellState extends State<ArchiveShell> {
+                       AnimatedSwitcher(
+-                        duration: _motionDuration(context, 230),
+-                        reverseDuration: _motionDuration(context, 200),
++                        duration: _motionDuration(context, 250),
++                        reverseDuration: _motionDuration(context, 215),
+@@ -496,9 +496,9 @@ class _ArchiveShellState extends State<ArchiveShell> {
+                           final reverse = key is ValueKey<_PageTransitionToken>
+                               ? key.value.reverse
+                               : false;
+                           final offset = reverse
+-                              ? const Offset(-.045, 0)
+-                              : const Offset(.045, 0);
++                              ? const Offset(-.032, 0)
++                              : const Offset(.032, 0);
+@@ -504,7 +504,7 @@ class _ArchiveShellState extends State<ArchiveShell> {
+                           return FadeTransition(
+                             opacity: Tween<double>(
+-                              begin: .82,
++                              begin: .76,
+                               end: 1,
