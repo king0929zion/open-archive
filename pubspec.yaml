@@ -38,7 +38,6 @@ dependencies:
   http: ^1.6.0
   flutter_svg: ^2.3.0
   cached_network_image: ^3.4.1
-  liquid_glass_widgets: ^0.29.5
 
 dev_dependencies:
   flutter_test:

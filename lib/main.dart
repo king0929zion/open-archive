@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'archive_icons.dart';
@@ -71,35 +70,7 @@ Future<void> main() async {
       systemNavigationBarDividerColor: Colors.transparent,
     ),
   );
-  final preferences = await SharedPreferences.getInstance();
-  GlassQuality? initialGlassQuality;
-  final savedGlassQuality = preferences.getString('archive.glass_quality');
-  if (savedGlassQuality != null) {
-    try {
-      initialGlassQuality = GlassQuality.values.byName(savedGlassQuality);
-    } catch (_) {
-      initialGlassQuality = null;
-    }
-  }
-
-  await LiquidGlassWidgets.initialize();
-  runApp(
-    LiquidGlassWidgets.wrap(
-      brightnessResolver: Theme.maybeBrightnessOf,
-      adaptiveQuality: true,
-      // The package currently marks adaptive configuration experimental. We
-      // intentionally use it to persist the calibrated tier across cold starts.
-      // ignore: experimental_member_use
-      adaptiveConfig: GlassAdaptiveScopeConfig(
-        initialQuality: initialGlassQuality,
-        allowStepUp: true,
-        onQualityChanged: (_, quality) => unawaited(
-          preferences.setString('archive.glass_quality', quality.name),
-        ),
-      ),
-      child: const ArchiveApp(),
-    ),
-  );
+  runApp(const ArchiveApp());
 }
 
 class ArchiveApp extends StatelessWidget {
@@ -631,31 +602,36 @@ class _CircularIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final callback = _callback();
-    final icon = ArchiveIcon(
-      iconName,
-      size: size * .47,
-      color: enabled ? _ink : _faint,
-    );
-    return GlassIconButton(
-      icon: icon,
-      onPressed: callback,
-      size: size,
-      iconSize: size * .47,
-      interactionScale: .925,
-      useOwnLayer: true,
-      glowColor: Colors.transparent,
-      glowRadius: 0,
-      settings: LiquidGlassSettings(
-        blur: dark ? 5 : 4.5,
-        thickness: dark ? 22 : 20,
-        glassColor: const Color(0x22FFFFFF),
-        backerColor: Colors.transparent,
-        glowIntensity: dark ? .38 : .32,
-        shadowElevation: 0,
-        saturation: 1.10,
+    final background = dark ? _button : _surface;
+    final foreground = dark ? _bg : _ink;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: iconName,
+      child: AnimatedOpacity(
+        opacity: enabled ? 1 : .42,
+        duration: _motionDuration(context, 120),
+        child: Material(
+          color: background,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: callback,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Center(
+                child: ArchiveIcon(
+                  iconName,
+                  size: size * .47,
+                  color: foreground,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
-      anchorStretch: true,
-      semanticLabel: iconName,
     );
   }
 }
