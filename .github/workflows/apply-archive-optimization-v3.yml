@@ -11,6 +11,7 @@ on:
       - 'assets/**'
       - 'pubspec.yaml'
       - 'pubspec.lock'
+      - '.github/workflows/apply-archive-optimization-v3.yml'
   workflow_dispatch:
 
 permissions:
@@ -24,7 +25,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build optimized Android APKs
+    name: Build permanently signed Android APKs
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
@@ -46,6 +47,37 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Restore permanent signing key
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          KEYSTORE_PATH="$RUNNER_TEMP/archive-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+
+      - name: Verify permanent signing certificate
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          EXPECTED="82:A5:97:05:3A:0A:1A:51:45:B1:33:3A:48:A2:8A:1C:C9:31:E6:B4:F6:E3:6A:21:EB:DD:F1:9A:79:27:75:58"
+          ACTUAL="$(keytool -exportcert -rfc \
+            -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" \
+            | openssl x509 -noout -fingerprint -sha256 \
+            | cut -d= -f2)"
+          echo "Release certificate SHA-256: $ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+
       - name: Resolve dependencies
         run: flutter pub get
 
@@ -65,9 +97,15 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "build_number=${BUILD_NUMBER}" >> "$GITHUB_OUTPUT"
 
-      - name: Build smaller release APKs
+      - name: Build smaller permanently signed release APKs
         shell: bash
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEY_PASSWORD"
           mkdir -p "build/symbols/${{ steps.meta.outputs.build_number }}"
           flutter build apk \
             --release \
@@ -76,6 +114,23 @@ jobs:
             --split-debug-info="build/symbols/${{ steps.meta.outputs.build_number }}" \
             --build-name "${{ steps.meta.outputs.version }}" \
             --build-number "${{ steps.meta.outputs.build_number }}"
+
+      - name: Verify APK signatures
+        shell: bash
+        run: |
+          set -euo pipefail
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$APKSIGNER"
+          EXPECTED="82a597053a0a1a5145b1333a48a28a1cc931e6b4f6e36a21ebddf19a79277558"
+          for APK in build/app/outputs/flutter-apk/*-release.apk; do
+            "$APKSIGNER" verify --verbose "$APK"
+            ACTUAL="$("$APKSIGNER" verify --print-certs "$APK" \
+              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
+              | head -n 1 \
+              | tr 'A-F' 'a-f')"
+            echo "$(basename "$APK"): $ACTUAL"
+            test "$ACTUAL" = "$EXPECTED"
+          done
 
       - name: Prepare download site
         shell: bash
@@ -109,6 +164,7 @@ jobs:
             "latestPath": "downloads/Archive-latest.apk",
             "sizeBytes": $ARM64_SIZE,
             "sha256": "$ARM64_SHA",
+            "certificateSha256": "82:A5:97:05:3A:0A:1A:51:45:B1:33:3A:48:A2:8A:1C:C9:31:E6:B4:F6:E3:6A:21:EB:DD:F1:9A:79:27:75:58",
             "commit": "$GITHUB_SHA",
             "builtAt": "$BUILT_AT",
             "downloads": [
