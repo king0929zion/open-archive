@@ -1,4 +1,4 @@
-name: Apply Archive optimization v2
+name: Apply Archive source cleanup
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
       - optimize/liquid-glass-performance
     paths:
       - tool/archive-ui-performance-v2.patch
-      - .github/workflows/apply-archive-optimization-v2.yml
 
 permissions:
   contents: write
@@ -44,9 +43,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lib/main.dart pubspec.lock
+          git add lib/main.dart pubspec.yaml pubspec.lock
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "perf: optimize interactions and liquid glass controls"
+          git commit -m "ui: remove liquid glass dependency and controls"
           git push
