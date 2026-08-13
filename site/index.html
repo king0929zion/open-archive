@@ -8,40 +8,50 @@
   <style>
     :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; color: #111; background: radial-gradient(circle at 20% 5%, rgba(255,255,255,.95), transparent 36%), linear-gradient(145deg, #eceff3, #fafafa 52%, #e8ebef); }
-    .shell { width: min(100%, 720px); }
-    .card { position: relative; overflow: hidden; padding: clamp(28px, 6vw, 56px); border: 1px solid rgba(255,255,255,.85); border-radius: 36px; background: rgba(255,255,255,.58); box-shadow: 0 24px 80px rgba(17,24,39,.12), inset 0 1px 0 rgba(255,255,255,.96); backdrop-filter: blur(28px) saturate(150%); -webkit-backdrop-filter: blur(28px) saturate(150%); }
-    .card::before { content: ""; position: absolute; inset: -40% auto auto -15%; width: 68%; aspect-ratio: 1; border-radius: 999px; background: rgba(255,255,255,.76); filter: blur(50px); pointer-events: none; }
-    .eyebrow { position: relative; margin: 0 0 14px; font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #71717a; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; color: #111; background: radial-gradient(circle at 18% 4%, rgba(255,255,255,.98), transparent 34%), radial-gradient(circle at 88% 90%, rgba(214,221,231,.72), transparent 34%), linear-gradient(145deg, #eef1f4, #fafafa 52%, #e8ebef); }
+    .shell { width: min(100%, 760px); }
+    .card { position: relative; overflow: hidden; padding: clamp(28px, 6vw, 56px); border: 1px solid rgba(255,255,255,.88); border-radius: 38px; background: rgba(255,255,255,.56); box-shadow: 0 28px 90px rgba(17,24,39,.12), inset 0 1px 0 rgba(255,255,255,.98); backdrop-filter: blur(30px) saturate(155%); -webkit-backdrop-filter: blur(30px) saturate(155%); }
+    .card::before { content: ""; position: absolute; inset: -34% auto auto -8%; width: 62%; aspect-ratio: 1; border-radius: 999px; background: rgba(255,255,255,.74); filter: blur(54px); pointer-events: none; }
+    .eyebrow { position: relative; margin: 0 0 14px; font-size: 12px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; color: #71717a; }
     h1 { position: relative; margin: 0; font-size: clamp(38px, 8vw, 72px); line-height: .98; letter-spacing: -.055em; }
-    .lead { position: relative; max-width: 520px; margin: 22px 0 30px; color: #5f6368; font-size: 16px; line-height: 1.75; }
-    .download { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 0 28px; border-radius: 999px; background: #171717; color: #fff; font-weight: 700; text-decoration: none; box-shadow: 0 12px 32px rgba(0,0,0,.18); transition: transform .16s ease, box-shadow .16s ease; }
-    .download:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(0,0,0,.22); }
-    .download:active { transform: scale(.98); }
-    .meta { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 34px; }
-    .item { padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.8); }
+    .lead { position: relative; max-width: 560px; margin: 22px 0 30px; color: #5f6368; font-size: 16px; line-height: 1.75; }
+    .download { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 58px; padding: 0 30px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: rgba(20,20,20,.94); color: #fff; font-weight: 760; text-decoration: none; box-shadow: 0 14px 34px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.13); transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease; }
+    .download:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(0,0,0,.22); }
+    .download:active { transform: scale(.975); }
+    .hint { position: relative; margin: 11px 2px 0; color: #85878d; font-size: 12px; }
+    .variants { position: relative; display: grid; gap: 9px; margin-top: 26px; }
+    .variant { display: flex; align-items: center; gap: 14px; padding: 13px 15px; border: 1px solid rgba(255,255,255,.78); border-radius: 18px; background: rgba(255,255,255,.42); color: inherit; text-decoration: none; transition: background .16s ease, transform .16s ease; }
+    .variant:hover { background: rgba(255,255,255,.68); transform: translateY(-1px); }
+    .variant-main { min-width: 0; flex: 1; }
+    .variant-title { display: block; font-size: 13px; font-weight: 720; }
+    .variant-sub { display: block; margin-top: 2px; color: #8b8d93; font-size: 11px; }
+    .variant-size { flex: none; color: #5f6368; font-size: 12px; font-weight: 650; }
+    .meta { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 30px; }
+    .item { padding: 14px 16px; border-radius: 18px; background: rgba(255,255,255,.48); border: 1px solid rgba(255,255,255,.78); }
     .label { display: block; color: #8b8d93; font-size: 11px; margin-bottom: 4px; }
     .value { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 650; }
-    .foot { margin: 16px 4px 0; color: #85878d; font-size: 12px; line-height: 1.6; }
-    @media (max-width: 520px) { body { padding: 16px; } .card { border-radius: 28px; } .meta { grid-template-columns: 1fr; } .download { width: 100%; } }
-    @media (prefers-reduced-motion: reduce) { .download { transition: none; } }
+    .foot { margin: 16px 4px 0; color: #85878d; font-size: 12px; line-height: 1.65; }
+    @media (max-width: 520px) { body { padding: 16px; } .card { border-radius: 30px; } .meta { grid-template-columns: 1fr; } .download { width: 100%; } }
+    @media (prefers-reduced-motion: reduce) { .download, .variant { transition: none; } }
   </style>
 </head>
 <body>
   <main class="shell">
     <section class="card">
       <p class="eyebrow">Archive Android</p>
-      <h1>把最新版本<br>装进手机。</h1>
-      <p class="lead">这里始终指向 GitHub Actions 最新成功构建的 Android APK。点击下面的按钮即可直接下载。</p>
-      <a id="download" class="download" href="./downloads/Archive-latest.apk" download>下载最新 APK</a>
+      <h1>更轻一点，<br>直接装进手机。</h1>
+      <p class="lead">默认提供适合绝大多数现代 Android 手机的 ARM64 精简 APK。构建由 GitHub Actions 完成，并自动发布到 GitHub Pages。</p>
+      <a id="download" class="download" href="./downloads/Archive-latest.apk" download>下载 ARM64 推荐版</a>
+      <p class="hint">不知道选哪个就点上面的推荐版。</p>
+      <div class="variants" id="variants" hidden></div>
       <div class="meta">
         <div class="item"><span class="label">版本</span><span class="value" id="version">读取中</span></div>
         <div class="item"><span class="label">构建</span><span class="value" id="build">读取中</span></div>
-        <div class="item"><span class="label">文件大小</span><span class="value" id="size">读取中</span></div>
+        <div class="item"><span class="label">推荐版大小</span><span class="value" id="size">读取中</span></div>
         <div class="item"><span class="label">更新时间</span><span class="value" id="time">读取中</span></div>
       </div>
     </section>
-    <p class="foot">首次安装时，Android 可能要求你允许浏览器安装未知来源应用。APK 由 GitHub Actions 自动构建并通过 GitHub Pages 发布。</p>
+    <p class="foot">如果手机非常老，可选择 32 位 ARM；Android 模拟器通常可选择 x86_64。首次安装时，系统可能要求允许浏览器安装未知来源应用。</p>
   </main>
   <script>
     const formatBytes = (bytes) => {
@@ -52,6 +62,13 @@
       while (value >= 1024 && index < units.length - 1) { value /= 1024; index += 1; }
       return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
     };
+
+    const abiDescription = (abi) => ({
+      'arm64-v8a': '现代 Android 手机',
+      'armeabi-v7a': '较老的 32 位 ARM 设备',
+      'x86_64': 'Android 模拟器 / x86 设备'
+    }[abi] || abi);
+
     fetch('./build-info.json', { cache: 'no-store' })
       .then((response) => response.json())
       .then((info) => {
@@ -60,6 +77,20 @@
         document.getElementById('size').textContent = formatBytes(Number(info.sizeBytes));
         document.getElementById('time').textContent = new Date(info.builtAt).toLocaleString('zh-CN');
         document.getElementById('download').href = `./${info.latestPath}`;
+
+        if (Array.isArray(info.downloads) && info.downloads.length) {
+          const variants = document.getElementById('variants');
+          variants.hidden = false;
+          variants.innerHTML = info.downloads.map((item) => `
+            <a class="variant" href="./${item.path}" download>
+              <span class="variant-main">
+                <span class="variant-title">${item.label}</span>
+                <span class="variant-sub">${abiDescription(item.abi)}</span>
+              </span>
+              <span class="variant-size">${formatBytes(Number(item.sizeBytes))}</span>
+            </a>
+          `).join('');
+        }
       })
       .catch(() => {
         document.getElementById('version').textContent = '最新稳定版';
