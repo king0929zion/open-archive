@@ -1,29 +1,42 @@
-name: Apply Archive optimization v3
+name: Build APK and deploy download page
 
 on:
   push:
     branches:
+      - main
       - optimize/liquid-glass-performance
-    paths:
-      - tool/archive-ui-performance-v3.patch
-      - .github/workflows/apply-archive-optimization-v3.yml
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: archive-pages
+  cancel-in-progress: true
 
 jobs:
-  apply-and-verify:
-    if: github.actor != 'github-actions[bot]'
+  build:
+    name: Build Android APK
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      build_number: ${{ steps.meta.outputs.build_number }}
+      apk_name: ${{ steps.meta.outputs.apk_name }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          fetch-depth: 0
+          distribution: temurin
+          java-version: '17'
 
-      - name: Apply reviewed patch
-        run: git apply --recount --whitespace=fix tool/archive-ui-performance-v3.patch
-
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
@@ -31,22 +44,72 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
-      - name: Format
-        run: dart format lib/main.dart
-
       - name: Analyze
         run: flutter analyze
 
       - name: Test
         run: flutter test
 
-      - name: Commit verified source changes
+      - name: Read build metadata
+        id: meta
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lib/main.dart pubspec.lock
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "perf: optimize interactions and liquid glass controls"
-          git push
+          VERSION_RAW="$(awk '/^version:/ {print $2; exit}' pubspec.yaml)"
+          VERSION="${VERSION_RAW%%+*}"
+          BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+          APK_NAME="Archive-v${VERSION}-build-${BUILD_NUMBER}.apk"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "build_number=${BUILD_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "apk_name=${APK_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Build release APK
+        run: >-
+          flutter build apk --release
+          --build-name "${{ steps.meta.outputs.version }}"
+          --build-number "${{ steps.meta.outputs.build_number }}"
+
+      - name: Prepare download site
+        shell: bash
+        run: |
+          mkdir -p _site/downloads
+          cp site/index.html _site/index.html
+          cp build/app/outputs/flutter-apk/app-release.apk "_site/downloads/${{ steps.meta.outputs.apk_name }}"
+          cp build/app/outputs/flutter-apk/app-release.apk _site/downloads/Archive-latest.apk
+          APK_SIZE="$(stat -c%s build/app/outputs/flutter-apk/app-release.apk)"
+          APK_SHA256="$(sha256sum build/app/outputs/flutter-apk/app-release.apk | cut -d ' ' -f1)"
+          BUILT_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          printf '{\n  "version": "%s",\n  "buildNumber": "%s",\n  "apkName": "%s",\n  "latestPath": "downloads/Archive-latest.apk",\n  "sizeBytes": %s,\n  "sha256": "%s",\n  "commit": "%s",\n  "builtAt": "%s"\n}\n' \
+            "${{ steps.meta.outputs.version }}" \
+            "${{ steps.meta.outputs.build_number }}" \
+            "${{ steps.meta.outputs.apk_name }}" \
+            "$APK_SIZE" "$APK_SHA256" "$GITHUB_SHA" "$BUILT_AT" > _site/build-info.json
+          touch _site/.nojekyll
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Archive-APK-v${{ steps.meta.outputs.version }}-build-${{ steps.meta.outputs.build_number }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
