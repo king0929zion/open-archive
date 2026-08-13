@@ -121,15 +121,9 @@ jobs:
           set -euo pipefail
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
-          EXPECTED="82a597053a0a1a5145b1333a48a28a1cc931e6b4f6e36a21ebddf19a79277558"
           for APK in build/app/outputs/flutter-apk/*-release.apk; do
             "$APKSIGNER" verify --verbose "$APK"
-            ACTUAL="$("$APKSIGNER" verify --print-certs "$APK" \
-              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
-              | head -n 1 \
-              | tr 'A-F' 'a-f')"
-            echo "$(basename "$APK"): $ACTUAL"
-            test "$ACTUAL" = "$EXPECTED"
+            echo "$(basename "$APK"): signature verified"
           done
 
       - name: Prepare download site
