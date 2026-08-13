@@ -1,0 +1,52 @@
+name: Apply Archive optimization
+
+on:
+  push:
+    branches:
+      - optimize/liquid-glass-performance
+    paths:
+      - tool/archive-ui-performance.patch
+      - .github/workflows/apply-archive-optimization.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply reviewed patch
+        run: git apply --recount --whitespace=fix tool/archive-ui-performance.patch
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Format
+        run: dart format lib/main.dart
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Commit verified source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/main.dart pubspec.lock
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "perf: optimize interactions and liquid glass controls"
+          git push
