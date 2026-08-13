@@ -88,6 +88,7 @@ class ArchiveApp extends StatelessWidget {
       splashFactory: NoSplash.splashFactory,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       colorScheme: ColorScheme.fromSeed(
         seedColor: _button,
         surface: _bg,
