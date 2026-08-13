@@ -25,6 +25,11 @@ const _radiusLg = 28.0;
 const _radiusMd = 20.0;
 const _radiusSm = 12.0;
 
+Duration _motionDuration(BuildContext context, int milliseconds) =>
+    MediaQuery.disableAnimationsOf(context)
+    ? Duration.zero
+    : Duration(milliseconds: milliseconds);
+
 enum AppPage { home, compose, detail, achi, album, stats, settings, apiEdit }
 
 class _PageTransitionToken {
@@ -63,10 +68,32 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
+  final preferences = await SharedPreferences.getInstance();
+  GlassQuality? initialGlassQuality;
+  final savedGlassQuality = preferences.getString('archive.glass_quality');
+  if (savedGlassQuality != null) {
+    try {
+      initialGlassQuality = GlassQuality.values.byName(savedGlassQuality);
+    } catch (_) {
+      initialGlassQuality = null;
+    }
+  }
+
   await LiquidGlassWidgets.initialize();
   runApp(
     LiquidGlassWidgets.wrap(
       brightnessResolver: Theme.maybeBrightnessOf,
+      adaptiveQuality: true,
+      // The package currently marks adaptive configuration experimental. We
+      // intentionally use it to persist the calibrated tier across cold starts.
+      // ignore: experimental_member_use
+      adaptiveConfig: GlassAdaptiveScopeConfig(
+        initialQuality: initialGlassQuality,
+        allowStepUp: true,
+        onQualityChanged: (_, quality) => unawaited(
+          preferences.setString('archive.glass_quality', quality.name),
+        ),
+      ),
       child: const ArchiveApp(),
     ),
   );
@@ -449,8 +476,8 @@ class _ArchiveShellState extends State<ArchiveShell> {
                   child: Stack(
                     children: [
                       AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 260),
-                        reverseDuration: const Duration(milliseconds: 220),
+                        duration: _motionDuration(context, 230),
+                        reverseDuration: _motionDuration(context, 200),
                         switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeInCubic,
                         // Keep only the incoming page in the paint stack. This
@@ -466,14 +493,22 @@ class _ArchiveShellState extends State<ArchiveShell> {
                           final offset = reverse
                               ? const Offset(-.045, 0)
                               : const Offset(.045, 0);
-                          return SlideTransition(
-                            position:
-                                Tween<Offset>(begin: offset, end: Offset.zero)
-                                    .chain(
-                                      CurveTween(curve: Curves.easeOutCubic),
-                                    )
-                                    .animate(animation),
-                            child: child,
+                          final curved = CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          );
+                          return FadeTransition(
+                            opacity: Tween<double>(
+                              begin: .82,
+                              end: 1,
+                            ).animate(curved),
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: offset,
+                                end: Offset.zero,
+                              ).animate(curved),
+                              child: child,
+                            ),
                           );
                         },
                         child: KeyedSubtree(
@@ -575,14 +610,12 @@ class _CircularIconButton extends StatelessWidget {
     required this.onTap,
     this.dark = false,
     this.enabled = true,
-    this.glass = true,
     this.size = 38,
   });
   final String iconName;
   final VoidCallback? onTap;
   final bool dark;
   final bool enabled;
-  final bool glass;
   final double size;
 
   VoidCallback? _callback() => enabled && onTap != null
@@ -600,38 +633,26 @@ class _CircularIconButton extends StatelessWidget {
       size: size * .47,
       color: enabled ? (dark ? _bg : _ink) : _faint,
     );
-    final background = dark ? _button : _surface;
-    if (!glass) {
-      return Material(
-        color: background,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: callback,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Center(child: icon),
-          ),
-        ),
-      );
-    }
-    // The package's transparent mode is the documented pattern for controls
-    // over an existing surface: it retains liquid stretch/glow on press without
-    // adding an opaque white glass plate on Archive's white canvas.
-    return DecoratedBox(
-      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
-      child: ClipOval(
-        child: GlassButton.custom(
-          onTap: callback ?? () {},
-          enabled: callback != null,
-          width: size,
-          height: size,
-          style: GlassButtonStyle.transparent,
-          stretch: .15,
-          child: icon,
-        ),
+    return GlassIconButton(
+      icon: icon,
+      onPressed: callback,
+      size: size,
+      iconSize: size * .47,
+      interactionScale: .94,
+      useOwnLayer: true,
+      glowColor: dark ? const Color(0x30111111) : const Color(0x4DFFFFFF),
+      glowRadius: size * .58,
+      settings: LiquidGlassSettings(
+        blur: 10,
+        thickness: dark ? 30 : 24,
+        glassColor: dark ? const Color(0xD4222222) : const Color(0x52FFFFFF),
+        backerColor: dark ? const Color(0xD9222222) : const Color(0xC7F8F8F8),
+        glowIntensity: dark ? .62 : .48,
+        shadowElevation: dark ? .7 : .45,
+        saturation: 1.12,
       ),
+      anchorStretch: true,
+      semanticLabel: iconName,
     );
   }
 }
@@ -721,7 +742,7 @@ class _FeedItem extends StatelessWidget {
         ? '${entry.text.substring(0, 100)}...'
         : entry.text;
     return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 420 + min(delay, 300)),
+      duration: _motionDuration(context, 340 + min(delay, 180)),
       tween: Tween(begin: 0, end: 1),
       curve: Curves.easeOutCubic,
       builder: (context, opacity, child) => Opacity(
@@ -943,19 +964,17 @@ class _ComposePageState extends State<_ComposePage> {
   bool get _canSubmit => _text.text.trim().isNotEmpty || _images.isNotEmpty;
 
   @override
-  void initState() {
-    super.initState();
-    _text.addListener(() => setState(() {}));
-  }
-
-  @override
   void dispose() {
     _text.dispose();
     super.dispose();
   }
 
   Future<void> _pickImages() async {
-    final picked = await _picker.pickMultiImage(imageQuality: 88);
+    final picked = await _picker.pickMultiImage(
+      maxWidth: 2048,
+      maxHeight: 2048,
+      imageQuality: 86,
+    );
     if (picked.isEmpty) return;
     final bytes = await Future.wait(picked.map((file) => file.readAsBytes()));
     if (mounted) setState(() => _images.addAll(bytes));
@@ -1120,11 +1139,14 @@ class _ComposePageState extends State<_ComposePage> {
       Positioned(
         top: 16,
         right: 16,
-        child: _CircularIconButton(
-          iconName: 'check',
-          onTap: _submit,
-          dark: true,
-          enabled: _canSubmit,
+        child: ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _text,
+          builder: (context, value, _) => _CircularIconButton(
+            iconName: 'check',
+            onTap: _submit,
+            dark: true,
+            enabled: value.text.trim().isNotEmpty || _images.isNotEmpty,
+          ),
         ),
       ),
     ],
@@ -1143,7 +1165,14 @@ class _PreviewImage extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(_radiusSm),
-          child: Image.memory(bytes, width: 76, height: 76, fit: BoxFit.cover),
+          child: Image.memory(
+            bytes,
+            width: 76,
+            height: 76,
+            fit: BoxFit.cover,
+            cacheWidth: (76 * MediaQuery.devicePixelRatioOf(context)).round(),
+            filterQuality: FilterQuality.medium,
+          ),
         ),
         Positioned(
           top: 4,
@@ -1314,11 +1343,6 @@ class _DetailPageState extends State<_DetailPage> {
   final _comment = TextEditingController();
   final _scroll = ScrollController();
   ArchiveComment? _replyTo;
-  @override
-  void initState() {
-    super.initState();
-    _comment.addListener(() => setState(() {}));
-  }
 
   @override
   void dispose() {
@@ -1618,7 +1642,6 @@ class _CommentBar extends StatelessWidget {
   final VoidCallback onSend;
   @override
   Widget build(BuildContext context) {
-    final active = controller.text.trim().isNotEmpty;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Column(
@@ -1680,12 +1703,15 @@ class _CommentBar extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 9),
-              _CircularIconButton(
-                iconName: 'send',
-                onTap: onSend,
-                dark: true,
-                enabled: active,
-                size: 34,
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: controller,
+                builder: (context, value, _) => _CircularIconButton(
+                  iconName: 'send',
+                  onTap: onSend,
+                  dark: true,
+                  enabled: value.text.trim().isNotEmpty,
+                  size: 34,
+                ),
               ),
             ],
           ),
@@ -1700,7 +1726,10 @@ class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => TextButton.icon(
-    onPressed: onTap,
+    onPressed: () {
+      HapticFeedback.selectionClick();
+      onTap();
+    },
     icon: const ArchiveIcon('back', size: 22),
     label: const Text('Back'),
     style: TextButton.styleFrom(
@@ -1738,7 +1767,6 @@ class _AchiPageState extends State<_AchiPage> {
   @override
   void initState() {
     super.initState();
-    _input.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToEnd());
   }
 
@@ -1830,12 +1858,15 @@ class _AchiPageState extends State<_AchiPage> {
               ),
             ),
             const SizedBox(width: 9),
-            _CircularIconButton(
-              iconName: 'send',
-              onTap: _send,
-              dark: true,
-              enabled: _input.text.trim().isNotEmpty,
-              size: 34,
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _input,
+              builder: (context, value, _) => _CircularIconButton(
+                iconName: 'send',
+                onTap: _send,
+                dark: true,
+                enabled: value.text.trim().isNotEmpty,
+                size: 34,
+              ),
             ),
           ],
         ),
@@ -2731,7 +2762,6 @@ class _ApiEditorPageState extends State<_ApiEditorPage> {
                       iconName: 'plus',
                       onTap: _addCustomModel,
                       dark: true,
-                      glass: false,
                       size: 42,
                     ),
                   ],
@@ -2952,7 +2982,7 @@ class _SideDrawerState extends State<_SideDrawer> {
 
   void _select(AppPage page) {
     widget.onClose();
-    Future<void>.delayed(const Duration(milliseconds: 120), () {
+    Future<void>.delayed(const Duration(milliseconds: 160), () {
       if (mounted) widget.onSelect(page);
     });
   }
@@ -2987,9 +3017,7 @@ class _SideDrawerState extends State<_SideDrawer> {
         children: [
           AnimatedOpacity(
             opacity: progress,
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 250),
+            duration: _dragging ? Duration.zero : _motionDuration(context, 220),
             child: GestureDetector(
               onTap: widget.onClose,
               child: const ColoredBox(
@@ -2999,9 +3027,7 @@ class _SideDrawerState extends State<_SideDrawer> {
             ),
           ),
           AnimatedContainer(
-            duration: _dragging
-                ? Duration.zero
-                : const Duration(milliseconds: 300),
+            duration: _dragging ? Duration.zero : _motionDuration(context, 260),
             curve: Curves.easeOutCubic,
             transform: Matrix4.translationValues(-width * (1 - progress), 0, 0),
             child: GestureDetector(
