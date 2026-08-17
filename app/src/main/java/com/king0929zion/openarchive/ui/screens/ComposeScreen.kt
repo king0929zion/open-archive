@@ -290,56 +290,59 @@ private fun LocationSheet(current: String, onSelect: (String) -> Unit, onDismiss
     val filtered = if (q.isBlank()) composePlaces else composePlaces.filter {
         listOf(it.value, it.name, it.category, it.address).joinToString(" ").lowercase().contains(q)
     }
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .20f)).clickable(onClick = onDismiss))
-    Column(
-        Modifier.fillMaxWidth().align(Alignment.BottomCenter).clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
-            .background(Color.White).clickable(enabled = false) {}.padding(bottom = 22.dp)
-    ) {
-        Box(Modifier.fillMaxWidth().padding(top = 9.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.width(32.dp).height(3.dp).clip(CircleShape).background(Color(0xFFE8E8E8)))
-        }
-        Text("位置", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 18.dp, top = 12.dp, bottom = 12.dp))
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(15.dp)).background(Color(0xFFF6F6F6)).padding(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .20f)).clickable(onClick = onDismiss))
+        Column(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp))
+                .background(Color.White).padding(bottom = 22.dp)
         ) {
-            BasicTextField(
-                value = query,
-                onValueChange = { query = it },
-                singleLine = true,
-                textStyle = TextStyle(fontSize = 13.sp, color = ArchiveColors.Text),
-                modifier = Modifier.weight(1f).padding(horizontal = 7.dp),
-                decorationBox = { inner -> Box { if (query.isBlank()) Text("搜索或输入位置", color = ArchiveColors.Tertiary, fontSize = 13.sp); inner() } },
-            )
-            Box(Modifier.clip(CircleShape).background(ArchiveColors.Dark).clickable { if (query.isNotBlank()) onSelect(query.trim()) }.padding(horizontal = 12.dp, vertical = 7.dp)) {
-                Text("使用", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+            Box(Modifier.fillMaxWidth().padding(top = 9.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.width(32.dp).height(3.dp).clip(CircleShape).background(Color(0xFFE8E8E8)))
             }
-        }
-        Text("附近地点", fontSize = 10.sp, color = ArchiveColors.Tertiary, modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 4.dp))
-        Column(Modifier.fillMaxWidth().heightIn(max = 300.dp).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
-            filtered.take(5).forEach { place ->
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                        .background(if (current == place.value) Color(0xFFF6F6F6) else Color.Transparent)
-                        .clickable { onSelect(place.value) }.padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xFFF4F4F4)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.LocationOn, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(13.dp))
-                    }
-                    Spacer(Modifier.width(9.dp))
-                    Column(Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            Spacer(Modifier.width(6.dp)); Text(place.category, fontSize = 9.sp, color = ArchiveColors.Tertiary)
-                        }
-                        Text(place.address, fontSize = 9.5.sp, color = Color(0xFFAAAAAA), maxLines = 1)
-                    }
-                    Text(place.distance, fontSize = 9.sp, color = Color(0xFFB8B8B8))
+            Text("位置", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 18.dp, top = 12.dp, bottom = 12.dp))
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(15.dp)).background(Color(0xFFF6F6F6)).padding(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    singleLine = true,
+                    textStyle = TextStyle(fontSize = 13.sp, color = ArchiveColors.Text),
+                    modifier = Modifier.weight(1f).padding(horizontal = 7.dp),
+                    decorationBox = { inner -> Box { if (query.isBlank()) Text("搜索或输入位置", color = ArchiveColors.Tertiary, fontSize = 13.sp); inner() } },
+                )
+                Box(Modifier.clip(CircleShape).background(ArchiveColors.Dark).clickable { if (query.isNotBlank()) onSelect(query.trim()) }.padding(horizontal = 12.dp, vertical = 7.dp)) {
+                    Text("使用", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
-            if (filtered.isEmpty()) Text("没有匹配地点，可以直接使用输入内容", color = ArchiveColors.Tertiary, fontSize = 11.sp, modifier = Modifier.padding(16.dp))
+            Text("附近地点", fontSize = 10.sp, color = ArchiveColors.Tertiary, modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 4.dp))
+            Column(Modifier.fillMaxWidth().heightIn(max = 300.dp).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
+                filtered.take(5).forEach { place ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                            .background(if (current == place.value) Color(0xFFF6F6F6) else Color.Transparent)
+                            .clickable { onSelect(place.value) }.padding(horizontal = 8.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xFFF4F4F4)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.LocationOn, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(13.dp))
+                        }
+                        Spacer(Modifier.width(9.dp))
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(place.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.width(6.dp)); Text(place.category, fontSize = 9.sp, color = ArchiveColors.Tertiary)
+                            }
+                            Text(place.address, fontSize = 9.5.sp, color = Color(0xFFAAAAAA), maxLines = 1)
+                        }
+                        Text(place.distance, fontSize = 9.sp, color = Color(0xFFB8B8B8))
+                    }
+                }
+                if (filtered.isEmpty()) Text("没有匹配地点，可以直接使用输入内容", color = ArchiveColors.Tertiary, fontSize = 11.sp, modifier = Modifier.padding(16.dp))
+            }
+            Text("不记录位置", color = ArchiveColors.Tertiary, fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally).clickable { onSelect("") }.padding(10.dp))
         }
-        Text("不记录位置", color = ArchiveColors.Tertiary, fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally).clickable { onSelect("") }.padding(10.dp))
     }
 }
