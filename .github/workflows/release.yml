@@ -31,11 +31,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install Android 37 platform
+      - name: Install Android 36 platform
         shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-37"
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Set up Gradle 9.5
         uses: gradle/actions/setup-gradle@v6
@@ -63,7 +62,7 @@ jobs:
         if: env.ANDROID_KEYSTORE_BASE64 != ''
         shell: bash
         run: |
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          APKSIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
           "$APKSIGNER" sign \
             --ks "$RUNNER_TEMP/open-archive.jks" \
             --ks-key-alias "$ANDROID_KEY_ALIAS" \
