@@ -62,6 +62,8 @@ import java.util.Locale
 fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Unit) {
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val allComments by viewModel.comments.collectAsStateWithLifecycle()
+    val avatarSeed by viewModel.avatarSeed.collectAsStateWithLifecycle()
+    val userName by viewModel.userName.collectAsStateWithLifecycle()
     val entry = entries.firstOrNull { it.id == entryId }
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
@@ -89,8 +91,8 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
         ) {
             item {
                 Row(Modifier.padding(top = 8.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    ArchiveAvatar(viewModel.avatarSeed.value, 38)
-                    Spacer(Modifier.width(10.dp)); Text(viewModel.userName.value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    ArchiveAvatar(avatarSeed, 38)
+                    Spacer(Modifier.width(10.dp)); Text(userName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
                 if (entry.text.isNotBlank()) Text(entry.text, fontSize = 14.sp, lineHeight = 24.sp, modifier = Modifier.padding(bottom = 14.dp))
                 EntryImageGrid(entry.images, detail = true)
@@ -166,7 +168,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(9.dp),
         ) {
-            ArchiveAvatar(viewModel.avatarSeed.value, 28)
+            ArchiveAvatar(avatarSeed, 28)
             BasicTextField(
                 value = commentText,
                 onValueChange = { commentText = it },
