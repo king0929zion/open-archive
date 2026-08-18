@@ -1,5 +1,7 @@
 package com.king0929zion.openarchive
 
+import android.os.SystemClock
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -83,10 +85,12 @@ class ArchiveViewModel(
 
     fun updateDraft(transform: (DraftSnapshot) -> DraftSnapshot) {
         val next = transform(_draft.value)
+        if (next == _draft.value) return
         _draft.value = next
         draftPersistJob?.cancel()
         draftPersistJob = viewModelScope.launch {
-            delay(250)
+            // Avoid a DataStore transaction for every key stroke / slider frame.
+            delay(650)
             settingsStore.saveDraft(next)
         }
     }
@@ -187,13 +191,12 @@ class ArchiveViewModel(
         val provider = providers.value.firstOrNull { it.id == defaultProviderId.value }
         val model = provider?.models?.firstOrNull { it.modelId == defaultModelId.value }
         if (provider == null || model == null) {
-            _achiMessages.value += AchiUiMessage(UUID.randomUUID().toString(), false, "还没有设置默认模型。请先到设置里配置供应商和模型。")
+            appendAchiMessages(AchiUiMessage(UUID.randomUUID().toString(), false, "还没有设置默认模型。请先到设置里配置供应商和模型。"))
             return
         }
         val user = AchiUiMessage(UUID.randomUUID().toString(), true, text.trim())
         val answerId = UUID.randomUUID().toString()
-        _achiMessages.value += user
-        _achiMessages.value += AchiUiMessage(answerId, false, "")
+        appendAchiMessages(user, AchiUiMessage(answerId, false, ""))
         achiJob?.cancel()
         achiJob = viewModelScope.launch {
             _achiStreaming.value = true
@@ -211,6 +214,8 @@ class ArchiveViewModel(
                 $recent
             """.trimIndent()
             val key = apiKeyCipher.decrypt(provider.encryptedApiKey)
+            val pending = StringBuilder()
+            var lastUiFlush = SystemClock.uptimeMillis()
             try {
                 aiClient.streamChat(
                     provider = provider,
@@ -221,16 +226,21 @@ class ArchiveViewModel(
                         AiChatMessage("user", text.trim()),
                     ),
                 ).collect { delta ->
-                    _achiMessages.value = _achiMessages.value.map {
-                        if (it.id == answerId) it.copy(text = it.text + delta) else it
+                    pending.append(delta)
+                    val now = SystemClock.uptimeMillis()
+                    // Cap streaming recomposition to ~25 fps instead of one recomposition per token.
+                    if (now - lastUiFlush >= 40L) {
+                        appendAchiDelta(answerId, pending.toString())
+                        pending.setLength(0)
+                        lastUiFlush = now
                     }
                 }
+                if (pending.isNotEmpty()) appendAchiDelta(answerId, pending.toString())
             } catch (_: CancellationException) {
+                if (pending.isNotEmpty()) appendAchiDelta(answerId, pending.toString())
                 // User-initiated stop: keep the partial answer without turning it into an error.
             } catch (error: Throwable) {
-                _achiMessages.value = _achiMessages.value.map {
-                    if (it.id == answerId) it.copy(text = "请求失败：${error.message ?: "未知错误"}") else it
-                }
+                replaceAchiMessage(answerId, "请求失败：${error.message ?: "未知错误"}")
             } finally {
                 _achiStreaming.value = false
             }
@@ -240,6 +250,30 @@ class ArchiveViewModel(
     fun stopAchi() {
         achiJob?.cancel()
         _achiStreaming.value = false
+    }
+
+    private fun appendAchiMessages(vararg messages: AchiUiMessage) {
+        // Bound the in-memory conversation so a long session does not gradually slow LazyColumn updates.
+        _achiMessages.value = (_achiMessages.value + messages).takeLast(80)
+    }
+
+    private fun appendAchiDelta(id: String, delta: String) {
+        if (delta.isEmpty()) return
+        val current = _achiMessages.value
+        val index = current.indexOfLast { it.id == id }
+        if (index < 0) return
+        val updated = current.toMutableList()
+        updated[index] = updated[index].copy(text = updated[index].text + delta)
+        _achiMessages.value = updated
+    }
+
+    private fun replaceAchiMessage(id: String, text: String) {
+        val current = _achiMessages.value
+        val index = current.indexOfLast { it.id == id }
+        if (index < 0) return
+        val updated = current.toMutableList()
+        updated[index] = updated[index].copy(text = text)
+        _achiMessages.value = updated
     }
 
     companion object {
@@ -252,6 +286,7 @@ class ArchiveViewModel(
     }
 }
 
+@Immutable
 data class AchiUiMessage(val id: String, val fromUser: Boolean, val text: String)
 
 class ArchiveViewModelFactory(private val container: AppContainer) : ViewModelProvider.Factory {
