@@ -28,33 +28,37 @@ fun EntryImageGrid(
         val gap = 3.dp
         val width = maxWidth
         when (images.size) {
-            1 -> DemoOrRemoteImage(
-                images[0],
-                Modifier.fillMaxWidth().aspectRatio(4f / 3f).clip(RoundedCornerShape(radius)),
-            )
+            1 -> DemoOrRemoteImage(images[0], Modifier.fillMaxWidth().aspectRatio(4f / 3f))
             2 -> Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                 val w = (width - gap) / 2
-                images.take(2).forEach { DemoOrRemoteImage(it, Modifier.width(w).height(w)) }
+                DemoOrRemoteImage(images[0], Modifier.width(w).height(w))
+                DemoOrRemoteImage(images[1], Modifier.width(w).height(w))
             }
             3 -> Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                 val w = (width - gap * 2) / 3
-                images.take(3).forEach { DemoOrRemoteImage(it, Modifier.size(w)) }
+                repeat(3) { index -> DemoOrRemoteImage(images[index], Modifier.size(w)) }
             }
             4 -> Column(verticalArrangement = Arrangement.spacedBy(gap)) {
                 val w = (width - gap) / 2
-                images.chunked(2).take(2).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                        row.forEach { DemoOrRemoteImage(it, Modifier.size(w)) }
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    DemoOrRemoteImage(images[0], Modifier.size(w)); DemoOrRemoteImage(images[1], Modifier.size(w))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    DemoOrRemoteImage(images[2], Modifier.size(w)); DemoOrRemoteImage(images[3], Modifier.size(w))
                 }
             }
             else -> Column(verticalArrangement = Arrangement.spacedBy(gap)) {
                 val w = (width - gap * 2) / 3
-                images.take(9).chunked(3).forEach { row ->
+                val count = minOf(images.size, 9)
+                var index = 0
+                while (index < count) {
                     Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
-                        row.forEach { DemoOrRemoteImage(it, Modifier.size(w)) }
-                        repeat(3 - row.size) { Box(Modifier.size(w)) }
+                        repeat(3) { column ->
+                            val imageIndex = index + column
+                            if (imageIndex < count) DemoOrRemoteImage(images[imageIndex], Modifier.size(w)) else Box(Modifier.size(w))
+                        }
                     }
+                    index += 3
                 }
             }
         }
