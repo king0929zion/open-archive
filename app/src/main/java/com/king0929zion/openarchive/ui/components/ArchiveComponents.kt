@@ -13,11 +13,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
 
 fun diceBearUrl(seed: String): String =
@@ -35,8 +35,9 @@ fun diceBearUrl(seed: String): String =
 
 @Composable
 fun ArchiveAvatar(seed: String, size: Int, modifier: Modifier = Modifier) {
+    val model = remember(seed) { diceBearUrl(seed) }
     AsyncImage(
-        model = diceBearUrl(seed),
+        model = model,
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = modifier
@@ -67,7 +68,7 @@ fun ArchiveHeader(
                     modifier = Modifier.clickable(onClick = onBack).padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, null, modifier = Modifier.size(20.dp))
+                    Icon(ArchiveIcons.Back, null, modifier = Modifier.size(20.dp))
                     Text("返回", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 }
             }
@@ -86,11 +87,13 @@ fun DemoOrRemoteImage(
     contentScale: ContentScale = ContentScale.Crop,
 ) {
     if (uri.startsWith("demo://")) {
-        val brush = when (uri.removePrefix("demo://")) {
-            "cafe" -> Brush.linearGradient(listOf(Color(0xFFEFE6D8), Color(0xFFCAB59C), Color(0xFF8B6E55)))
-            "box" -> Brush.linearGradient(listOf(Color(0xFFD9D4CC), Color(0xFFB4875D), Color(0xFF343434)))
-            "book" -> Brush.linearGradient(listOf(Color(0xFFF6F0E4), Color(0xFFC8B8A5)))
-            else -> Brush.linearGradient(listOf(Color(0xFF68716D), Color(0xFFF2EEE8), Color(0xFF292929)))
+        val brush = remember(uri) {
+            when (uri.removePrefix("demo://")) {
+                "cafe" -> Brush.linearGradient(listOf(Color(0xFFEFE6D8), Color(0xFFCAB59C), Color(0xFF8B6E55)))
+                "box" -> Brush.linearGradient(listOf(Color(0xFFD9D4CC), Color(0xFFB4875D), Color(0xFF343434)))
+                "book" -> Brush.linearGradient(listOf(Color(0xFFF6F0E4), Color(0xFFC8B8A5)))
+                else -> Brush.linearGradient(listOf(Color(0xFF68716D), Color(0xFFF2EEE8), Color(0xFF292929)))
+            }
         }
         Box(modifier = modifier.background(brush))
     } else {

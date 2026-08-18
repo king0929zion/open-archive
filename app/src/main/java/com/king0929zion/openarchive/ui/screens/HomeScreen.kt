@@ -23,14 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Collections
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,12 +42,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.king0929zion.openarchive.ArchiveViewModel
 import com.king0929zion.openarchive.data.ArchiveEntry
+import com.king0929zion.openarchive.ui.ArchiveFormatters
 import com.king0929zion.openarchive.ui.components.ArchiveAvatar
 import com.king0929zion.openarchive.ui.components.EntryImageGrid
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -87,7 +79,7 @@ fun HomeScreen(
                     Modifier.size(34.dp).clip(CircleShape).background(ArchiveColors.Dark).clickable(onClick = onCompose),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(ArchiveIcons.Add, null, tint = Color.White, modifier = Modifier.size(18.dp))
                 }
             }
 
@@ -100,21 +92,15 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 10.dp, end = 20.dp, bottom = 80.dp),
                 ) {
-                    items(entries, key = { it.id }) { entry ->
+                    items(entries, key = { it.id }, contentType = { "archive-entry" }) { entry ->
                         FeedEntry(entry, onClick = { onEntry(entry.id) })
                     }
                 }
             }
         }
 
-        AnimatedVisibility(
-            visible = drawerOpen,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            Box(
-                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.28f)).clickable { drawerOpen = false }
-            )
+        AnimatedVisibility(visible = drawerOpen, enter = fadeIn(), exit = fadeOut()) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.28f)).clickable { drawerOpen = false })
         }
         AnimatedVisibility(
             visible = drawerOpen,
@@ -124,7 +110,6 @@ fun HomeScreen(
             ArchiveDrawer(
                 userName = userName,
                 avatarSeed = avatarSeed,
-                onClose = { drawerOpen = false },
                 onNavigate = { drawerOpen = false; onNavigate(it) },
             )
         }
@@ -133,15 +118,13 @@ fun HomeScreen(
 
 @Composable
 private fun FeedEntry(entry: ArchiveEntry, onClick: () -> Unit) {
-    val day = SimpleDateFormat("dd", Locale.US).format(Date(entry.createdAt))
-    val month = SimpleDateFormat("MMM", Locale.US).format(Date(entry.createdAt)).uppercase(Locale.US)
     Row(
         Modifier.fillMaxWidth().padding(top = 34.dp).clickable(onClick = onClick),
         horizontalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Row(Modifier.width(46.dp).padding(top = 2.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(day, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            Text(month, fontSize = 9.sp, fontWeight = FontWeight.Medium)
+            Text(ArchiveFormatters.feedDay(entry.createdAt), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(ArchiveFormatters.feedMonth(entry.createdAt), fontSize = 9.sp, fontWeight = FontWeight.Medium)
         }
         Column(Modifier.weight(1f)) {
             if (entry.text.isNotBlank()) {
@@ -163,7 +146,6 @@ private fun FeedEntry(entry: ArchiveEntry, onClick: () -> Unit) {
 private fun ArchiveDrawer(
     userName: String,
     avatarSeed: String,
-    onClose: () -> Unit,
     onNavigate: (String) -> Unit,
 ) {
     Column(
@@ -181,18 +163,18 @@ private fun ArchiveDrawer(
             }
         }
         Spacer(Modifier.height(18.dp))
-        DrawerRow("Achi", Icons.Rounded.AutoAwesome) { onNavigate("achi") }
-        DrawerRow("搜索", Icons.Rounded.Search) { onNavigate("search") }
-        DrawerRow("相册", Icons.Rounded.Collections) { onNavigate("album") }
-        DrawerRow("统计", Icons.Rounded.BarChart) { onNavigate("stats") }
+        DrawerRow("Achi", ArchiveIcons.Achi) { onNavigate("achi") }
+        DrawerRow("搜索", ArchiveIcons.Search) { onNavigate("search") }
+        DrawerRow("相册", ArchiveIcons.Album) { onNavigate("album") }
+        DrawerRow("统计", ArchiveIcons.Stats) { onNavigate("stats") }
         Spacer(Modifier.weight(1f))
         Box(Modifier.fillMaxWidth().height(1.dp).background(ArchiveColors.Surface))
-        DrawerRow("设置", Icons.Rounded.Settings) { onNavigate("settings") }
+        DrawerRow("设置", ArchiveIcons.Settings) { onNavigate("settings") }
     }
 }
 
 @Composable
-private fun DrawerRow(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+private fun DrawerRow(label: String, icon: ImageVector, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 22.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -200,6 +182,6 @@ private fun DrawerRow(label: String, icon: androidx.compose.ui.graphics.vector.I
         Icon(icon, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(13.dp))
         Text(label, Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        Icon(Icons.Rounded.ChevronRight, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp))
+        Icon(ArchiveIcons.ChevronRight, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp))
     }
 }

@@ -2,6 +2,7 @@ package com.king0929zion.openarchive.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.king0929zion.openarchive.ArchiveViewModel
 import com.king0929zion.openarchive.ui.components.ArchiveAvatar
 import com.king0929zion.openarchive.ui.components.ArchiveHeader
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
 
 @Composable
@@ -54,14 +54,18 @@ fun SettingsScreen(viewModel: ArchiveViewModel, onBack: () -> Unit, onProviders:
                 }
             }
             Spacer(Modifier.size(12.dp))
-            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(ArchiveColors.Surface).clickable(onClick = onProviders).padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.layout.Box(Modifier.size(32.dp).clip(RoundedCornerShape(11.dp)).background(Color.White), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Memory, null, modifier = Modifier.size(15.dp))
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(ArchiveColors.Surface)
+                    .clickable(onClick = onProviders).padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(32.dp).clip(RoundedCornerShape(11.dp)).background(Color.White), contentAlignment = Alignment.Center) {
+                    Icon(ArchiveIcons.Server, null, modifier = Modifier.size(15.dp))
                 }
                 Spacer(Modifier.width(12.dp))
                 Text("模型与供应商", fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                 Text(summary, fontSize = 10.5.sp, color = ArchiveColors.Tertiary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(.8f))
-                Text("›", color = ArchiveColors.Tertiary, fontSize = 20.sp)
+                Icon(ArchiveIcons.ChevronRight, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp))
             }
         }
     }

@@ -18,11 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.king0929zion.openarchive.ArchiveViewModel
 import com.king0929zion.openarchive.data.ProviderModel
 import com.king0929zion.openarchive.ui.components.ArchiveHeader
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
 
 @Composable
@@ -101,9 +97,11 @@ fun ProviderEditorScreen(viewModel: ArchiveViewModel, providerId: String?, onBac
             FieldLabel("API Key", top = 15)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 PlainInput(apiKey, { apiKey = it }, if (encryptedKey.isNotBlank()) "已保存，留空则不修改" else "sk-…", Modifier.weight(1f), password = !showKey)
-                Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(ArchiveColors.Surface).clickable { showKey = !showKey }, contentAlignment = Alignment.Center) {
-                    Icon(if (showKey) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(15.dp))
-                }
+                Box(
+                    Modifier.height(38.dp).clip(RoundedCornerShape(12.dp)).background(ArchiveColors.Surface)
+                        .clickable { showKey = !showKey }.padding(horizontal = 11.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text(if (showKey) "隐藏" else "显示", color = ArchiveColors.Secondary, fontSize = 10.5.sp) }
             }
             Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 SmallAction("测试连接", Modifier.weight(1f)) {
@@ -122,12 +120,15 @@ fun ProviderEditorScreen(viewModel: ArchiveViewModel, providerId: String?, onBac
             if (fetched.isNotEmpty()) {
                 FieldLabel("可用模型", top = 18)
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ArchiveColors.Surface)) {
-                    fetched.take(60).forEach { id ->
+                    fetched.take(40).forEach { id ->
                         val exists = models.any { it.modelId == id }
                         Row(Modifier.fillMaxWidth().clickable { if (!exists) models.add(ProviderModel(providerId.orEmpty(), id)) }.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(id, fontSize = 10.5.sp, color = if (exists) ArchiveColors.Text else ArchiveColors.Secondary, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(if (exists) "已添加" else "+", fontSize = 10.sp, color = ArchiveColors.Tertiary)
                         }
+                    }
+                    if (fetched.size > 40) {
+                        Text("仅显示前 40 个，可手动输入其他模型 ID", fontSize = 9.sp, color = ArchiveColors.Tertiary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                     }
                 }
             }
@@ -143,14 +144,21 @@ fun ProviderEditorScreen(viewModel: ArchiveViewModel, providerId: String?, onBac
                         }
                         Text(if (model.vision) "识图 开" else "识图 关", fontSize = 9.sp, color = ArchiveColors.Secondary, modifier = Modifier.clip(CircleShape).background(Color.White).clickable { models[index] = model.copy(vision = !model.vision) }.padding(horizontal = 7.dp, vertical = 5.dp))
                         Spacer(Modifier.width(4.dp))
-                        Icon(Icons.Rounded.DeleteOutline, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(22.dp).clickable { models.removeAt(index) }.padding(4.dp))
+                        Icon(ArchiveIcons.Delete, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(22.dp).clickable { models.removeAt(index) }.padding(4.dp))
                     }
                     BasicTextField(value = model.displayName, onValueChange = { models[index] = model.copy(displayName = it) }, singleLine = true, textStyle = TextStyle(fontSize = 10.5.sp, color = ArchiveColors.Secondary), modifier = Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(9.dp)).background(Color.White).padding(horizontal = 9.dp, vertical = 7.dp), decorationBox = { inner -> Box { if (model.displayName.isBlank()) Text("自定义显示名", fontSize = 10.5.sp, color = ArchiveColors.Tertiary); inner() } })
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 PlainInput(customModel, { customModel = it }, "手动输入模型 ID", Modifier.weight(1f))
-                Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(ArchiveColors.Dark).clickable(enabled = customModel.isNotBlank()) { if (models.none { it.modelId == customModel.trim() }) models.add(ProviderModel(providerId.orEmpty(), customModel.trim())); customModel = "" }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Add, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+                Box(
+                    Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(ArchiveColors.Dark)
+                        .clickable(enabled = customModel.isNotBlank()) {
+                            if (models.none { it.modelId == customModel.trim() }) models.add(ProviderModel(providerId.orEmpty(), customModel.trim()))
+                            customModel = ""
+                        },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(ArchiveIcons.Add, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
             }
 
             if (providerId != null) {
