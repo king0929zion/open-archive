@@ -17,12 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,19 +31,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.king0929zion.openarchive.ArchiveViewModel
 import com.king0929zion.openarchive.data.ArchiveEntry
+import com.king0929zion.openarchive.ui.ArchiveFormatters
 import com.king0929zion.openarchive.ui.components.ArchiveHeader
 import com.king0929zion.openarchive.ui.components.DemoOrRemoteImage
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlinx.coroutines.delay
+
+private data class IndexedArchiveEntry(val entry: ArchiveEntry, val haystack: String)
 
 @Composable
 fun SearchScreen(
@@ -55,19 +54,39 @@ fun SearchScreen(
 ) {
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
-    val terms = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }
-    val results = remember(entries, terms) {
-        if (terms.isEmpty()) emptyList() else entries.filter { e ->
-            val date = SimpleDateFormat("yyyy-MM-dd yyyy年M月d日", Locale.CHINA).format(Date(e.createdAt))
-            val hay = listOf(
-                e.text,
-                e.location,
-                ArchiveViewModel.weatherLabel(e.weather),
-                ArchiveViewModel.moodLabel(e.mood),
-                date,
-            ).joinToString(" ").lowercase()
-            terms.all(hay::contains)
+    var settledQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(query) {
+        if (query.isBlank()) settledQuery = ""
+        else {
+            delay(90)
+            settledQuery = query
         }
+    }
+
+    // Build the expensive normalized/searchable representation only when Room emits new entries.
+    val index = remember(entries) {
+        entries.map { entry ->
+            IndexedArchiveEntry(
+                entry,
+                listOf(
+                    entry.text,
+                    entry.location,
+                    ArchiveViewModel.weatherLabel(entry.weather),
+                    ArchiveViewModel.moodLabel(entry.mood),
+                    ArchiveFormatters.searchDate(entry.createdAt),
+                ).joinToString(" ").lowercase(),
+            )
+        }
+    }
+    val terms = remember(settledQuery) {
+        settledQuery.trim().lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }
+    }
+    val results = remember(index, terms) {
+        if (terms.isEmpty()) emptyList() else index.asSequence()
+            .filter { indexed -> terms.all(indexed.haystack::contains) }
+            .map { it.entry }
+            .toList()
     }
 
     Column(Modifier.fillMaxSize().background(Color.White)) {
@@ -77,7 +96,7 @@ fun SearchScreen(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(ArchiveColors.Surface).padding(horizontal = 13.dp, vertical = 11.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Rounded.Search, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp))
+                Icon(ArchiveIcons.Search, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(9.dp))
                 BasicTextField(
                     value = query,
@@ -93,12 +112,13 @@ fun SearchScreen(
                     },
                 )
                 if (query.isNotBlank()) {
-                    Icon(Icons.Rounded.Close, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp).clickable { query = "" })
+                    Icon(ArchiveIcons.Close, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp).clickable { query = "" })
                 }
             }
             Text(
                 when {
                     query.isBlank() -> ""
+                    settledQuery != query -> "正在搜索…"
                     results.isEmpty() -> "没有匹配的记录"
                     else -> "找到 ${results.size} 条记录"
                 },
@@ -112,7 +132,7 @@ fun SearchScreen(
                 }
             } else {
                 LazyColumn(Modifier.fillMaxSize()) {
-                    items(results, key = { it.id }) { entry -> SearchResult(entry, onEntry) }
+                    items(results, key = { it.id }, contentType = { "search-result" }) { entry -> SearchResult(entry, onEntry) }
                 }
             }
         }
@@ -121,11 +141,8 @@ fun SearchScreen(
 
 @Composable
 private fun SearchResult(entry: ArchiveEntry, onEntry: (String) -> Unit) {
-    val date = SimpleDateFormat("yyyy年M月d日 · HH:mm", Locale.CHINA).format(Date(entry.createdAt))
-    Column(
-        Modifier.fillMaxWidth().clickable { onEntry(entry.id) }.padding(vertical = 15.dp),
-    ) {
-        Text(date, fontSize = 10.sp, color = ArchiveColors.Tertiary, modifier = Modifier.padding(bottom = 5.dp))
+    Column(Modifier.fillMaxWidth().clickable { onEntry(entry.id) }.padding(vertical = 15.dp)) {
+        Text(ArchiveFormatters.resultDateTime(entry.createdAt), fontSize = 10.sp, color = ArchiveColors.Tertiary, modifier = Modifier.padding(bottom = 5.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
                 Text(
