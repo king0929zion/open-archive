@@ -25,13 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AddPhotoAlternate
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.LocationOn
-import androidx.compose.material.icons.rounded.SentimentSatisfied
-import androidx.compose.material.icons.rounded.WbCloudy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -61,6 +54,7 @@ import com.king0929zion.openarchive.data.DraftSnapshot
 import com.king0929zion.openarchive.data.NearbyPlace
 import com.king0929zion.openarchive.ui.components.ArchivePill
 import com.king0929zion.openarchive.ui.components.DemoOrRemoteImage
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
 import kotlin.math.roundToInt
 
@@ -108,9 +102,11 @@ fun ComposeScreen(viewModel: ArchiveViewModel, onClose: () -> Unit, onPublished:
                     }
                 },
             )
-            PhotoStrip(draft, onAdd = {
-                picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-            }, onRemove = viewModel::removeImage)
+            PhotoStrip(
+                draft,
+                onAdd = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                onRemove = viewModel::removeImage,
+            )
 
             Row(
                 Modifier.fillMaxWidth().padding(top = 14.dp),
@@ -119,13 +115,13 @@ fun ComposeScreen(viewModel: ArchiveViewModel, onClose: () -> Unit, onPublished:
             ) {
                 ArchivePill(
                     label = draft.location.ifBlank { "位置" },
-                    icon = { Icon(Icons.Rounded.LocationOn, null, Modifier.size(14.dp)) },
+                    icon = { Icon(ArchiveIcons.Location, null, Modifier.size(14.dp)) },
                     selected = draft.location.isNotBlank(),
                 ) { weatherOpen = false; moodOpen = false; locationOpen = true }
                 Box {
                     ArchivePill(
                         label = ArchiveViewModel.weatherLabel(draft.weather).ifBlank { "天气" },
-                        icon = { Icon(Icons.Rounded.WbCloudy, null, Modifier.size(14.dp)) },
+                        icon = { Icon(weatherIcon(draft.weather), null, Modifier.size(14.dp)) },
                         selected = draft.weather.isNotBlank(),
                     ) { locationOpen = false; moodOpen = false; weatherOpen = !weatherOpen }
                     if (weatherOpen) WeatherPopup(draft.weather, onSelect = { key ->
@@ -136,14 +132,15 @@ fun ComposeScreen(viewModel: ArchiveViewModel, onClose: () -> Unit, onPublished:
                 Box {
                     ArchivePill(
                         label = ArchiveViewModel.moodLabel(draft.mood).ifBlank { "心情" },
-                        icon = { Icon(Icons.Rounded.SentimentSatisfied, null, Modifier.size(14.dp)) },
+                        icon = { Icon(moodIcon(draft.mood), null, Modifier.size(14.dp)) },
                         selected = draft.mood.isNotBlank(),
                     ) { locationOpen = false; weatherOpen = false; moodOpen = !moodOpen }
-                    if (moodOpen) MoodPopup(draft.mood, onSelect = { key ->
-                        viewModel.updateDraft { it.copy(mood = key) }
-                    }, onClear = {
-                        viewModel.updateDraft { it.copy(mood = "") }; moodOpen = false
-                    }, onDismiss = { moodOpen = false })
+                    if (moodOpen) MoodPopup(
+                        selected = draft.mood,
+                        onSelect = { key -> viewModel.updateDraft { it.copy(mood = key) } },
+                        onClear = { viewModel.updateDraft { it.copy(mood = "") }; moodOpen = false },
+                        onDismiss = { moodOpen = false },
+                    )
                 }
             }
         }
@@ -152,10 +149,10 @@ fun ComposeScreen(viewModel: ArchiveViewModel, onClose: () -> Unit, onPublished:
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            RoundAction(false, onClose) { Icon(Icons.Rounded.Close, null, Modifier.size(18.dp)) }
+            RoundAction(false, onClose) { Icon(ArchiveIcons.Close, null, Modifier.size(18.dp)) }
             RoundAction(draft.text.isNotBlank() || draft.images.isNotEmpty(), onClick = {
                 viewModel.publish(onPublished)
-            }) { Icon(Icons.Rounded.Check, null, Modifier.size(18.dp)) }
+            }) { Icon(ArchiveIcons.Check, null, Modifier.size(18.dp)) }
         }
 
         if (locationOpen) {
@@ -206,7 +203,7 @@ private fun PhotoStrip(draft: DraftSnapshot, onAdd: () -> Unit, onRemove: (Int) 
             Box(
                 Modifier.size(70.dp).clip(RoundedCornerShape(13.dp)).background(Color(0xFFF6F6F6)).clickable(onClick = onAdd),
                 contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Rounded.AddPhotoAlternate, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(20.dp)) }
+            ) { Icon(ArchiveIcons.Photo, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(20.dp)) }
         }
     }
 }
@@ -220,7 +217,7 @@ private fun WeatherPopup(selected: String, onSelect: (String) -> Unit, onDismiss
         properties = PopupProperties(focusable = true),
     ) {
         Column(
-            Modifier.width(218.dp).shadow(5.dp, RoundedCornerShape(16.dp), ambientColor = Color.Black.copy(.035f), spotColor = Color.Black.copy(.035f))
+            Modifier.width(218.dp).shadow(4.dp, RoundedCornerShape(16.dp), ambientColor = Color.Black.copy(.025f), spotColor = Color.Black.copy(.025f))
                 .background(Color.White, RoundedCornerShape(16.dp)).padding(10.dp)
         ) {
             weatherOptions.chunked(3).forEach { row ->
@@ -231,7 +228,12 @@ private fun WeatherPopup(selected: String, onSelect: (String) -> Unit, onDismiss
                                 .background(if (key == selected) ArchiveColors.Dark else ArchiveColors.Surface)
                                 .clickable { onSelect(key) },
                             contentAlignment = Alignment.Center,
-                        ) { Text(label, fontSize = 10.sp, color = if (key == selected) Color.White else ArchiveColors.Secondary) }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(weatherIcon(key), null, modifier = Modifier.size(12.dp), tint = if (key == selected) Color.White else ArchiveColors.Secondary)
+                                Text(label, fontSize = 10.sp, color = if (key == selected) Color.White else ArchiveColors.Secondary)
+                            }
+                        }
                     }
                     repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                 }
@@ -252,18 +254,22 @@ private fun MoodPopup(selected: String, onSelect: (String) -> Unit, onClear: () 
         properties = PopupProperties(focusable = true),
     ) {
         Column(
-            Modifier.width(248.dp).shadow(5.dp, RoundedCornerShape(16.dp), ambientColor = Color.Black.copy(.035f), spotColor = Color.Black.copy(.035f))
+            Modifier.width(248.dp).shadow(4.dp, RoundedCornerShape(16.dp), ambientColor = Color.Black.copy(.025f), spotColor = Color.Black.copy(.025f))
                 .background(Color.White, RoundedCornerShape(16.dp)).padding(horizontal = 13.dp, vertical = 11.dp)
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(moodOptions[value.roundToInt().coerceIn(0, 4)].second, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            val index = value.roundToInt().coerceIn(0, 4)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Icon(moodIcon(moodOptions[index].first), null, modifier = Modifier.size(13.dp))
+                    Text(moodOptions[index].second, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
                 Text("清除", fontSize = 10.sp, color = ArchiveColors.Tertiary, modifier = Modifier.clickable(onClick = onClear))
             }
             Slider(
                 value = value,
-                onValueChange = {
-                    value = it
-                    onSelect(moodOptions[it.roundToInt().coerceIn(0, 4)].first)
+                onValueChange = { value = it },
+                onValueChangeFinished = {
+                    onSelect(moodOptions[value.roundToInt().coerceIn(0, 4)].first)
                 },
                 valueRange = 0f..4f,
                 steps = 3,
@@ -287,8 +293,10 @@ private fun MoodPopup(selected: String, onSelect: (String) -> Unit, onClear: () 
 private fun LocationSheet(current: String, onSelect: (String) -> Unit, onDismiss: () -> Unit) {
     var query by remember(current) { mutableStateOf(current) }
     val q = query.trim().lowercase()
-    val filtered = if (q.isBlank()) composePlaces else composePlaces.filter {
-        listOf(it.value, it.name, it.category, it.address).joinToString(" ").lowercase().contains(q)
+    val filtered = remember(q) {
+        if (q.isBlank()) composePlaces else composePlaces.filter {
+            listOf(it.value, it.name, it.category, it.address).joinToString(" ").lowercase().contains(q)
+        }
     }
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .20f)).clickable(onClick = onDismiss))
@@ -327,7 +335,7 @@ private fun LocationSheet(current: String, onSelect: (String) -> Unit, onDismiss
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xFFF4F4F4)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.LocationOn, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(13.dp))
+                            Icon(ArchiveIcons.Location, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(13.dp))
                         }
                         Spacer(Modifier.width(9.dp))
                         Column(Modifier.weight(1f)) {
@@ -345,4 +353,20 @@ private fun LocationSheet(current: String, onSelect: (String) -> Unit, onDismiss
             Text("不记录位置", color = ArchiveColors.Tertiary, fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally).clickable { onSelect("") }.padding(10.dp))
         }
     }
+}
+
+private fun weatherIcon(key: String) = when (key) {
+    "sunny" -> ArchiveIcons.Sun
+    "overcast" -> ArchiveIcons.Cloud
+    "rain" -> ArchiveIcons.CloudRain
+    "snow" -> ArchiveIcons.Snowflake
+    else -> ArchiveIcons.CloudSun
+}
+
+private fun moodIcon(key: String) = when (key) {
+    "low" -> ArchiveIcons.Moon
+    "calm" -> ArchiveIcons.Leaf
+    "cozy" -> ArchiveIcons.Coffee
+    "energy" -> ArchiveIcons.Zap
+    else -> ArchiveIcons.Smile
 }
