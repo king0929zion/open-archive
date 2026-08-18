@@ -1,5 +1,8 @@
 package com.king0929zion.openarchive.data
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class ArchiveEntry(
     val id: String,
     val createdAt: Long,
@@ -10,6 +13,7 @@ data class ArchiveEntry(
     val mood: String = "",
 )
 
+@Immutable
 data class ArchiveComment(
     val id: String,
     val entryId: String,
@@ -20,6 +24,7 @@ data class ArchiveComment(
     val createdAt: Long,
 )
 
+@Immutable
 data class ProviderModel(
     val providerId: String,
     val modelId: String,
@@ -27,6 +32,7 @@ data class ProviderModel(
     val vision: Boolean = false,
 )
 
+@Immutable
 data class AiProvider(
     val id: String,
     val name: String,
@@ -36,6 +42,7 @@ data class AiProvider(
     val models: List<ProviderModel> = emptyList(),
 )
 
+@Immutable
 data class DraftSnapshot(
     val text: String = "",
     val images: List<String> = emptyList(),
@@ -44,6 +51,7 @@ data class DraftSnapshot(
     val mood: String = "",
 )
 
+@Immutable
 data class NearbyPlace(
     val value: String,
     val name: String,
