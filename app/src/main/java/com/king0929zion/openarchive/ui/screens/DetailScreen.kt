@@ -19,13 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.LocationOn
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Reply
-import androidx.compose.material.icons.rounded.Send
-import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -39,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -50,13 +44,12 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.king0929zion.openarchive.ArchiveViewModel
 import com.king0929zion.openarchive.data.ArchiveComment
+import com.king0929zion.openarchive.ui.ArchiveFormatters
 import com.king0929zion.openarchive.ui.components.ArchiveAvatar
 import com.king0929zion.openarchive.ui.components.ArchiveHeader
 import com.king0929zion.openarchive.ui.components.EntryImageGrid
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Unit) {
@@ -64,7 +57,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
     val allComments by viewModel.comments.collectAsStateWithLifecycle()
     val avatarSeed by viewModel.avatarSeed.collectAsStateWithLifecycle()
     val userName by viewModel.userName.collectAsStateWithLifecycle()
-    val entry = entries.firstOrNull { it.id == entryId }
+    val entry = remember(entries, entryId) { entries.firstOrNull { it.id == entryId } }
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
     var deleteConfirm by remember { mutableStateOf(false) }
@@ -78,10 +71,12 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
         }
         return
     }
-    val comments = allComments.filter { it.entryId == entryId }
-    val top = comments.filter { it.parentId == null }
-    val date = SimpleDateFormat("yyyy年M月d日", Locale.CHINA).format(Date(entry.createdAt))
-    val time = SimpleDateFormat("HH:mm", Locale.CHINA).format(Date(entry.createdAt))
+
+    val comments = remember(allComments, entryId) { allComments.filter { it.entryId == entryId } }
+    val commentsByParent = remember(comments) { comments.groupBy { it.parentId } }
+    val top = commentsByParent[null].orEmpty()
+    val date = ArchiveFormatters.detailDate(entry.createdAt)
+    val time = ArchiveFormatters.detailTime(entry.createdAt)
 
     Column(Modifier.fillMaxSize().background(Color.White)) {
         ArchiveHeader(onBack = onBack)
@@ -89,7 +84,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 22.dp, end = 22.dp, bottom = 24.dp),
         ) {
-            item {
+            item(key = "entry-$entryId", contentType = "detail-entry") {
                 Row(Modifier.padding(top = 8.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     ArchiveAvatar(avatarSeed, 38)
                     Spacer(Modifier.width(10.dp)); Text(userName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -103,9 +98,9 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            if (entry.location.isNotBlank()) MetaText("⌖", entry.location)
-                            ArchiveViewModel.weatherLabel(entry.weather).takeIf { it.isNotBlank() }?.let { MetaText("○", it) }
-                            ArchiveViewModel.moodLabel(entry.mood).takeIf { it.isNotBlank() }?.let { MetaText("☺", it) }
+                            if (entry.location.isNotBlank()) MetaText(ArchiveIcons.Location, entry.location)
+                            ArchiveViewModel.weatherLabel(entry.weather).takeIf { it.isNotBlank() }?.let { MetaText(detailWeatherIcon(entry.weather), it) }
+                            ArchiveViewModel.moodLabel(entry.mood).takeIf { it.isNotBlank() }?.let { MetaText(detailMoodIcon(entry.mood), it) }
                             if (entry.location.isBlank() && entry.weather.isBlank() && entry.mood.isBlank()) {
                                 Text("未添加位置或状态", fontSize = 10.sp, color = ArchiveColors.Tertiary)
                             }
@@ -114,7 +109,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                             Box(
                                 Modifier.size(28.dp).clip(CircleShape).clickable { menuOpen = !menuOpen },
                                 contentAlignment = Alignment.Center,
-                            ) { Icon(Icons.Rounded.MoreVert, "更多操作", tint = ArchiveColors.Secondary, modifier = Modifier.size(18.dp)) }
+                            ) { Icon(ArchiveIcons.More, "更多操作", tint = ArchiveColors.Secondary, modifier = Modifier.size(18.dp)) }
                             if (menuOpen) {
                                 Popup(
                                     alignment = Alignment.TopEnd,
@@ -123,10 +118,11 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                                     properties = PopupProperties(focusable = true),
                                 ) {
                                     Column(
-                                        Modifier.width(132.dp).shadow(5.dp, RoundedCornerShape(16.dp), ambientColor = Color.Black.copy(.035f), spotColor = Color.Black.copy(.035f))
+                                        Modifier.width(132.dp)
+                                            .shadow(4.dp, RoundedCornerShape(16.dp), ambientColor = Color.Black.copy(.025f), spotColor = Color.Black.copy(.025f))
                                             .background(Color.White, RoundedCornerShape(16.dp)).padding(6.dp)
                                     ) {
-                                        ActionRow("分享", false, Icons.Rounded.Share) {
+                                        ActionRow("分享", false, ArchiveIcons.Share) {
                                             menuOpen = false
                                             val meta = listOfNotNull(
                                                 "$date $time",
@@ -139,7 +135,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                                                 type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text)
                                             }, null))
                                         }
-                                        ActionRow("删除", true, Icons.Rounded.DeleteOutline) { menuOpen = false; deleteConfirm = true }
+                                        ActionRow("删除", true, ArchiveIcons.Delete) { menuOpen = false; deleteConfirm = true }
                                     }
                                 }
                             }
@@ -149,8 +145,8 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                     if (top.isEmpty()) Text("还没有评论，来说点什么吧", color = ArchiveColors.Tertiary, fontSize = 12.sp)
                 }
             }
-            items(top, key = { it.id }) { comment ->
-                CommentBlock(comment, comments.filter { it.parentId == comment.id }, onReply = { replyTo = comment })
+            items(top, key = { it.id }, contentType = { "comment" }) { comment ->
+                CommentBlock(comment, commentsByParent[comment.id].orEmpty(), onReply = { replyTo = comment })
             }
         }
 
@@ -160,7 +156,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("回复 @${replyTo?.authorName}", fontSize = 11.sp, color = ArchiveColors.Secondary)
-                Text("×", color = ArchiveColors.Tertiary, modifier = Modifier.clickable { replyTo = null })
+                Icon(ArchiveIcons.Close, "取消回复", color = ArchiveColors.Tertiary, modifier = Modifier.size(18.dp).clickable { replyTo = null }.padding(2.dp))
             }
         }
         Row(
@@ -183,7 +179,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                         viewModel.addComment(entryId, commentText, replyTo?.id); commentText = ""; replyTo = null
                     },
                 contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Rounded.Send, null, tint = if (commentText.isBlank()) ArchiveColors.Tertiary else Color.White, modifier = Modifier.size(15.dp)) }
+            ) { Icon(ArchiveIcons.Send, null, tint = if (commentText.isBlank()) ArchiveColors.Tertiary else Color.White, modifier = Modifier.size(15.dp)) }
         }
     }
 
@@ -200,14 +196,15 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
 }
 
 @Composable
-private fun MetaText(symbol: String, label: String) {
+private fun MetaText(icon: ImageVector, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(symbol, color = ArchiveColors.Secondary, fontSize = 11.sp); Text(label, color = ArchiveColors.Secondary, fontSize = 11.sp, maxLines = 1)
+        Icon(icon, null, tint = ArchiveColors.Secondary, modifier = Modifier.size(12.dp))
+        Text(label, color = ArchiveColors.Secondary, fontSize = 11.sp, maxLines = 1)
     }
 }
 
 @Composable
-private fun ActionRow(label: String, danger: Boolean, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+private fun ActionRow(label: String, danger: Boolean, icon: ImageVector, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(11.dp)).clickable(onClick = onClick).padding(horizontal = 11.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -234,6 +231,22 @@ private fun CommentBlock(comment: ArchiveComment, replies: List<ArchiveComment>,
                 }
             }
         }
-        Icon(Icons.Rounded.Reply, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(26.dp).padding(6.dp).clickable(onClick = onReply))
+        Icon(ArchiveIcons.Reply, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(26.dp).padding(6.dp).clickable(onClick = onReply))
     }
+}
+
+private fun detailWeatherIcon(key: String) = when (key) {
+    "sunny" -> ArchiveIcons.Sun
+    "overcast" -> ArchiveIcons.Cloud
+    "rain" -> ArchiveIcons.CloudRain
+    "snow" -> ArchiveIcons.Snowflake
+    else -> ArchiveIcons.CloudSun
+}
+
+private fun detailMoodIcon(key: String) = when (key) {
+    "low" -> ArchiveIcons.Moon
+    "calm" -> ArchiveIcons.Leaf
+    "cozy" -> ArchiveIcons.Coffee
+    "energy" -> ArchiveIcons.Zap
+    else -> ArchiveIcons.Smile
 }
