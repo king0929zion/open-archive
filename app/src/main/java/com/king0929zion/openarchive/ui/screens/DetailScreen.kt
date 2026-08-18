@@ -156,7 +156,7 @@ fun DetailScreen(viewModel: ArchiveViewModel, entryId: String, onBack: () -> Uni
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("回复 @${replyTo?.authorName}", fontSize = 11.sp, color = ArchiveColors.Secondary)
-                Icon(ArchiveIcons.Close, "取消回复", color = ArchiveColors.Tertiary, modifier = Modifier.size(18.dp).clickable { replyTo = null }.padding(2.dp))
+                Icon(ArchiveIcons.Close, "取消回复", tint = ArchiveColors.Tertiary, modifier = Modifier.size(18.dp).clickable { replyTo = null }.padding(2.dp))
             }
         }
         Row(
