@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.king0929zion.openarchive.ArchiveViewModel
 import com.king0929zion.openarchive.ui.components.ArchiveHeader
+import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
 
 @Composable
@@ -52,12 +51,17 @@ fun ProvidersScreen(viewModel: ArchiveViewModel, onBack: () -> Unit, onEdit: (St
             ArchiveHeader(title = "AI 模型", onBack = onBack)
             Column(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 4.dp)) {
                 Text("默认模型", fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 12.dp, bottom = 8.dp))
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(ArchiveColors.Surface).clickable { if (providers.any { it.models.isNotEmpty() }) pickerOpen = true }.padding(horizontal = 15.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(ArchiveColors.Surface)
+                        .clickable { if (providers.any { it.models.isNotEmpty() }) pickerOpen = true }
+                        .padding(horizontal = 15.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Column(Modifier.weight(1f)) {
                         Text(defaultModel?.displayName?.ifBlank { defaultModel.modelId } ?: "未设置默认模型", fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                         Text(defaultProvider?.name ?: "选择 Achi 默认使用的模型", fontSize = 9.5.sp, color = ArchiveColors.Tertiary)
                     }
-                    Text("›", color = ArchiveColors.Tertiary, fontSize = 20.sp)
+                    Icon(ArchiveIcons.ChevronRight, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp))
                 }
                 Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("供应商", fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
@@ -70,11 +74,13 @@ fun ProvidersScreen(viewModel: ArchiveViewModel, onBack: () -> Unit, onEdit: (St
                             Column(Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(provider.name, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    if (provider.id == defaultProviderId) { Spacer(Modifier.width(7.dp)); Text("默认", fontSize = 8.5.sp, color = ArchiveColors.Secondary, modifier = Modifier.clip(CircleShape).background(Color(0xFFECECEC)).padding(horizontal = 5.dp, vertical = 1.dp)) }
+                                    if (provider.id == defaultProviderId) {
+                                        Spacer(Modifier.width(7.dp)); Text("默认", fontSize = 8.5.sp, color = ArchiveColors.Secondary, modifier = Modifier.clip(CircleShape).background(Color(0xFFECECEC)).padding(horizontal = 5.dp, vertical = 1.dp))
+                                    }
                                 }
                                 Text("${formatLabel(provider.format)} · ${provider.models.size} 个模型", fontSize = 9.5.sp, color = ArchiveColors.Tertiary)
                             }
-                            Text("›", color = ArchiveColors.Tertiary, fontSize = 20.sp)
+                            Icon(ArchiveIcons.ChevronRight, null, tint = ArchiveColors.Tertiary, modifier = Modifier.size(16.dp))
                         }
                         if (index != providers.lastIndex) Box(Modifier.fillMaxWidth().padding(start = 15.dp).height(1.dp).background(Color.Black.copy(alpha = .035f)))
                     }
@@ -90,9 +96,18 @@ fun ProvidersScreen(viewModel: ArchiveViewModel, onBack: () -> Unit, onEdit: (St
                     Text(provider.name, fontSize = 9.5.sp, color = ArchiveColors.Tertiary, modifier = Modifier.padding(start = 20.dp, top = 8.dp, bottom = 3.dp))
                     provider.models.forEach { model ->
                         val selected = provider.id == defaultProviderId && model.modelId == defaultModelId
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp).clip(RoundedCornerShape(12.dp)).background(if (selected) Color(0xFFF4F4F4) else Color.Transparent).clickable { viewModel.setDefaultModel(provider.id, model.modelId); pickerOpen = false }.padding(horizontal = 10.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) { Text(model.displayName.ifBlank { model.modelId }, fontSize = 11.5.sp, fontWeight = FontWeight.Medium); if (model.displayName.isNotBlank()) Text(model.modelId, fontSize = 9.5.sp, color = ArchiveColors.Tertiary) }
-                            if (selected) Icon(Icons.Rounded.Check, null, modifier = Modifier.size(14.dp))
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp).clip(RoundedCornerShape(12.dp))
+                                .background(if (selected) Color(0xFFF4F4F4) else Color.Transparent)
+                                .clickable { viewModel.setDefaultModel(provider.id, model.modelId); pickerOpen = false }
+                                .padding(horizontal = 10.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(model.displayName.ifBlank { model.modelId }, fontSize = 11.5.sp, fontWeight = FontWeight.Medium)
+                                if (model.displayName.isNotBlank()) Text(model.modelId, fontSize = 9.5.sp, color = ArchiveColors.Tertiary)
+                            }
+                            if (selected) Icon(ArchiveIcons.Check, null, modifier = Modifier.size(14.dp))
                         }
                     }
                 }
