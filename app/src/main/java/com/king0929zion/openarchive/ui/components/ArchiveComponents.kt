@@ -1,7 +1,12 @@
 package com.king0929zion.openarchive.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -16,17 +21,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.king0929zion.openarchive.ui.ArchiveMotion
 import com.king0929zion.openarchive.ui.icons.ArchiveIcons
 import com.king0929zion.openarchive.ui.theme.ArchiveColors
 
@@ -40,6 +49,7 @@ fun ArchiveAvatar(seed: String, size: Int, modifier: Modifier = Modifier) {
         model = model,
         contentDescription = null,
         contentScale = ContentScale.Crop,
+        filterQuality = FilterQuality.Low,
         modifier = modifier
             .size(size.dp)
             .clip(CircleShape)
@@ -101,6 +111,7 @@ fun DemoOrRemoteImage(
             model = uri,
             contentDescription = null,
             contentScale = contentScale,
+            filterQuality = FilterQuality.Low,
             modifier = modifier.background(ArchiveColors.Surface),
         )
     }
@@ -113,11 +124,31 @@ fun ArchivePill(
     selected: Boolean = false,
     onClick: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.965f else 1f,
+        animationSpec = tween(
+            durationMillis = if (pressed) ArchiveMotion.PressIn else ArchiveMotion.Quick,
+            easing = ArchiveMotion.Easing,
+        ),
+        label = "archive-pill-scale",
+    )
+    val indication = LocalIndication.current
+
     Row(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(RoundedCornerShape(999.dp))
             .background(if (selected) Color(0xFFF2F2F2) else Color(0xFFF6F6F6))
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = indication,
+                onClick = onClick,
+            )
             .padding(horizontal = 11.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
