@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.king0929zion.openarchive.ArchiveViewModel
 import com.king0929zion.openarchive.data.ArchiveEntry
 import com.king0929zion.openarchive.ui.ArchiveFormatters
+import com.king0929zion.openarchive.ui.ArchiveMotion
 import com.king0929zion.openarchive.ui.components.ArchiveAvatar
 import com.king0929zion.openarchive.ui.components.EntryImageGrid
 import com.king0929zion.openarchive.ui.icons.ArchiveIcons
@@ -99,13 +101,49 @@ fun HomeScreen(
             }
         }
 
-        AnimatedVisibility(visible = drawerOpen, enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(
+            visible = drawerOpen,
+            enter = fadeIn(
+                tween(
+                    durationMillis = ArchiveMotion.Fast,
+                    easing = ArchiveMotion.Easing,
+                )
+            ),
+            exit = fadeOut(
+                tween(
+                    durationMillis = ArchiveMotion.Quick,
+                    easing = ArchiveMotion.Easing,
+                )
+            ),
+        ) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.28f)).clickable { drawerOpen = false })
         }
         AnimatedVisibility(
             visible = drawerOpen,
-            enter = slideInHorizontally(initialOffsetX = { -it }),
-            exit = slideOutHorizontally(targetOffsetX = { -it }),
+            enter = slideInHorizontally(
+                animationSpec = tween(
+                    durationMillis = ArchiveMotion.Standard,
+                    easing = ArchiveMotion.Easing,
+                ),
+                initialOffsetX = { -it },
+            ) + fadeIn(
+                tween(
+                    durationMillis = ArchiveMotion.Fast,
+                    easing = ArchiveMotion.Easing,
+                )
+            ),
+            exit = slideOutHorizontally(
+                animationSpec = tween(
+                    durationMillis = ArchiveMotion.Fast,
+                    easing = ArchiveMotion.Easing,
+                ),
+                targetOffsetX = { -it },
+            ) + fadeOut(
+                tween(
+                    durationMillis = ArchiveMotion.Quick,
+                    easing = ArchiveMotion.Easing,
+                )
+            ),
         ) {
             ArchiveDrawer(
                 userName = userName,
