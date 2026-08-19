@@ -1,5 +1,10 @@
 package com.king0929zion.openarchive.ui
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,7 +33,67 @@ import com.king0929zion.openarchive.ui.screens.StatsScreen
 fun OpenArchiveApp(viewModel: ArchiveViewModel) {
     val nav = rememberNavController()
     Box(Modifier.fillMaxSize().background(Color.White).safeDrawingPadding()) {
-        NavHost(navController = nav, startDestination = "home") {
+        NavHost(
+            navController = nav,
+            startDestination = "home",
+            enterTransition = {
+                fadeIn(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Fast,
+                        delayMillis = 20,
+                        easing = ArchiveMotion.Easing,
+                    )
+                ) + slideInHorizontally(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Screen,
+                        easing = ArchiveMotion.Easing,
+                    ),
+                    initialOffsetX = { it / 12 },
+                )
+            },
+            exitTransition = {
+                fadeOut(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Quick,
+                        easing = ArchiveMotion.Easing,
+                    )
+                ) + slideOutHorizontally(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Fast,
+                        easing = ArchiveMotion.Easing,
+                    ),
+                    targetOffsetX = { -it / 28 },
+                )
+            },
+            popEnterTransition = {
+                fadeIn(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Fast,
+                        easing = ArchiveMotion.Easing,
+                    )
+                ) + slideInHorizontally(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Standard,
+                        easing = ArchiveMotion.Easing,
+                    ),
+                    initialOffsetX = { -it / 16 },
+                )
+            },
+            popExitTransition = {
+                fadeOut(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Quick,
+                        easing = ArchiveMotion.Easing,
+                    )
+                ) + slideOutHorizontally(
+                    animationSpec = tween(
+                        durationMillis = ArchiveMotion.Standard,
+                        easing = ArchiveMotion.Easing,
+                    ),
+                    targetOffsetX = { it / 10 },
+                )
+            },
+        ) {
             composable("home") {
                 HomeScreen(
                     viewModel = viewModel,
